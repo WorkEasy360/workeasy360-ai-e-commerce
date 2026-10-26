@@ -1,0 +1,8 @@
+[
+  {
+    "AllowedOrigins": ["https://ADMIN_DOMAIN"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 600
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "@workeasy/auth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Store roles, permissions and identity-provider (OIDC) interfaces.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

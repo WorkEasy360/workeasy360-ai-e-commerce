@@ -1,0 +1,13 @@
+{
+  "name": "@workeasy/ai",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI provider adapters and AI Studio tasks for commerce: product and collection copy, review summaries, sales insights (server only).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

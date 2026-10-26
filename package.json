@@ -1,0 +1,43 @@
+{
+  "name": "workeasy360-ai-ecommerce",
+  "private": true,
+  "description": "Multi-store AI e-commerce builder for the Workeasy360 product family.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "pnpm": ">=12.11.2 <13"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm -r build",
+    "check:a11y": "node scripts/a11y-audit.mjs",
+    "check:budgets": "node scripts/perf-budget.mjs",
+    "check:bundles": "node scripts/client-bundle-check.mjs",
+    "check:servers": "node scripts/server-bundle-check.mjs",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:browser": "vitest run --project browser",
+    "test:all": "vitest run",
+    "db:setup": "pnpm --filter @workeasy/database db setup",
+    "db:migrate": "pnpm --filter @workeasy/database db migrate",
+    "db:seed": "pnpm --filter @workeasy/database db seed",
+    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait --wait-timeout 300 postgres redis object-storage mail identity scanner && docker compose -f infra/docker-compose.yml --env-file .env run --rm object-storage-init",
+    "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
+    "infra:reset": "docker compose -f infra/docker-compose.yml --env-file .env down -v",
+    "infra:ps": "docker compose -f infra/docker-compose.yml --env-file .env ps",
+    "browsers:install": "playwright install chromium-headless-shell"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@vitest/browser-playwright": "5.0.4",
+    "axe-core": "4.10.3",
+    "oxlint": "1.87.0",
+    "playwright": "1.64.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
+  }
+}

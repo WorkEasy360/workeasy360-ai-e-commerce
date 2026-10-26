@@ -1,0 +1,13 @@
+{
+  "name": "@workeasy/payments",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Card payment gateways (Razorpay, Stripe): payments, signature checks, webhooks and refunds; and encrypted gateway credentials (server only).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

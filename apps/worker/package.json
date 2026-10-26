@@ -1,0 +1,27 @@
+{
+  "name": "@workeasy/worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Background worker process: outbox dispatch, durable jobs and timers.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "build": "tsup",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@workeasy/ai": "workspace:*",
+    "@workeasy/database": "workspace:*",
+    "@workeasy/files": "workspace:*",
+    "@workeasy/jobs": "workspace:*",
+    "@workeasy/mail": "workspace:*",
+    "@workeasy/observability": "workspace:*",
+    "pino": "10.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "tsx": "4.23.15"
+  }
+}

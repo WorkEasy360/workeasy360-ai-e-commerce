@@ -1,0 +1,49 @@
+# TLS termination on the EC2 server. Caddy obtains and renews
+# certificates automatically, including for merchants' own shop domains:
+# a certificate is issued the first time a verified custom domain is
+# visited, after the API confirms the domain belongs to a shop. The apps set
+# their own framing and referrer headers; HSTS is set here because only this
+# layer knows the site is HTTPS.
+{
+	email {$ACME_EMAIL}
+	on_demand_tls {
+		# 200 only for domains a merchant has verified over DNS, so nobody
+		# can make this server request certificates for arbitrary names.
+		ask http://api:4000/public/v1/domains/check
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Merchant admin, with the sign-in, API and webhook routes it proxies to the API.
+{$ADMIN_DOMAIN} {
+	import common
+	reverse_proxy admin:3000
+}
+
+# The platform storefront: every shop at /s/<slug>.
+{$STOREFRONT_DOMAIN} {
+	import common
+	reverse_proxy storefront:3001
+}
+
+
+# Merchants' own domains (shop.theirbrand.com). The storefront maps the
+# Host header to the shop; unknown hosts get a plain 404 there.
+https:// {
+	tls {
+		on_demand
+	}
+	import common
+	reverse_proxy storefront:3001
+}

@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Files",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::QUARANTINE_BUCKET/*",
+        "arn:aws:s3:::MEDIA_BUCKET/*",
+        "arn:aws:s3:::EXPORTS_BUCKET/*"
+      ]
+    },
+    {
+      "Sid": "ReadSettings",
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": ["arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:workeasy-commerce/production/env-*"]
+    }
+  ]
+}

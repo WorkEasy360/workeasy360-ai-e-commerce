@@ -1,0 +1,125 @@
+# Deploys to the AWS EC2 server over SSH (docs/deployment.md).
+# Every push to main whose CI run succeeds is built into an image, pushed to
+# GitHub's container registry, and deployed on the server. Run it by hand
+# (Actions -> Deploy to AWS -> Run workflow) to redeploy main.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions -> Secrets):
+#   EC2_HOST          the server's Elastic IP or DNS name
+#   EC2_USER          the SSH user, e.g. ubuntu
+#   EC2_SSH_KEY       its private key (the whole .pem file)
+#   EC2_KNOWN_HOSTS   optional: output of `ssh-keyscan <host>`, checked against the server.
+#                     Without it the host key is read on each run (trust on first use).
+# Repository variable:
+#   DOMAIN            the admin's address, e.g. admin.13-233-10-20.sslip.io; checked after deploying
+# The app's settings and passwords are not in GitHub: the server reads them
+# from AWS Secrets Manager with its IAM role. Until EC2_HOST is set, this workflow does nothing.
+name: Deploy to AWS
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-aws-commerce
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to production
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Check the server is configured
+        id: configured
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "EC2_HOST is not set; skipping the deploy."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.configured.outputs.ok == 'true'
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Build and push the image (skipped if this commit is already built)
+        if: steps.configured.outputs.ok == 'true'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          owner=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/$owner/workeasy-commerce:$COMMIT"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          if docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "$image already exists"
+          else
+            docker build --pull -t "$image" .
+            docker push "$image"
+          fi
+
+      - name: Deploy on the server over SSH
+        if: steps.configured.outputs.ok == 'true'
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          SSH_USER: ${{ secrets.EC2_USER }}
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 15 "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          target="${SSH_USER:-ubuntu}@$HOST"
+          ssh_() { ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=yes -o ConnectTimeout=20 "$target" "$@"; }
+
+          # Server files for this release, then into place as root.
+          scp -i ~/.ssh/deploy -o StrictHostKeyChecking=yes infra/aws/docker-compose.yml infra/aws/Caddyfile infra/aws/deploy.sh "$target:/tmp/"
+          ssh_ "sudo install -d -m 700 /opt/workeasy-commerce && cd /tmp && sudo install -m 644 docker-compose.yml Caddyfile /opt/workeasy-commerce/ && sudo install -m 755 deploy.sh /opt/workeasy-commerce/ && rm -f docker-compose.yml Caddyfile deploy.sh"
+
+          # The registry token is valid only for this job: used for the pull, then removed.
+          echo "$TOKEN" | ssh_ "sudo docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin > /dev/null"
+          status=0
+          ssh_ "sudo /opt/workeasy-commerce/deploy.sh '$IMAGE'" || status=$?
+          ssh_ "sudo docker logout ghcr.io > /dev/null" || true
+          exit $status
+
+      - name: Check the site from outside
+        if: steps.configured.outputs.ok == 'true' && vars.DOMAIN != ''
+        env:
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://$DOMAIN/healthz" || true)
+            echo "https://$DOMAIN/healthz -> $code"
+            [ "$code" = 200 ] && exit 0
+            sleep 10
+          done
+          echo "The site did not answer 200. The release is running on the server; check DNS, ports 80/443 and the certificate."
+          exit 1
