@@ -43,7 +43,10 @@ The examples use `ap-south-1` (Mumbai). Use your region throughout.
      - 80 and 443 from anywhere;
      - 22 from your IP only.
    - Run `sudo bash ec2-setup-ubuntu.sh` once.
-2. **Aurora access:** in the cluster's security group, allow port 5432 from the EC2 server's security group. Nothing else changes on the cluster.
+2. **Database access:**
+   - Same region and VPC as the server: in the database's security group, allow port 5432 from the EC2 server's security group.
+   - Another region (the current setup: server in Singapore, database in Stockholm): allow port 5432 from the server's Elastic IP only (`/32`), never from anywhere. Expect slower pages, since every query crosses regions. Moving the server into the database's region removes that.
+   - Nothing else changes on the database server.
 3. **S3:**
    - Create three private buckets: quarantine, media and exports. Example: `workeasy-commerce-media-<account-id>`.
    - Block public access on all three.
@@ -91,6 +94,14 @@ To move to the real domain:
 4. Redeploy.
 
 Merchants' own shop domains (Settings → Domain) point a CNAME at the storefront address. Caddy issues their certificates on first visit, after the API confirms the domain is verified.
+
+## To do before real launch
+
+Shortcuts taken for the first deploy, to tighten later:
+
+- **Quarantine bucket CORS allows uploads from any website** (`"AllowedOrigins": ["*"]`). Uploads still need a short-lived signed link that only the app issues, so this is safe for testing. Before launch, restrict it to the admin address: `infra/aws/iam/quarantine-cors.json`, with `ADMIN_DOMAIN` filled in. Change it again whenever the admin address changes, for example when moving from sslip.io to the real domain.
+- **Addresses are sslip.io names.** Move to the real domain as described under Addresses.
+- **SSH (port 22) is open to one IP.** GitHub Actions deploys over SSH, so it can't simply be closed. Options: allow GitHub's runner ranges, or switch deploys to AWS Systems Manager.
 
 ## Accessibility and performance checks
 

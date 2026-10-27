@@ -14,7 +14,7 @@
     "@workeasy/commerce": "workspace:*",
     "@workeasy/database": "workspace:*",
     "@workeasy/jobs": "workspace:*",
-    "nodemailer": "10.0.13"
+    "nodemailer": "10.1.4"
   },
   "devDependencies": {
     "@types/nodemailer": "7.0.4"
