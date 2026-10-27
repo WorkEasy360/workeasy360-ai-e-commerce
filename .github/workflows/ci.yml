@@ -89,7 +89,7 @@ jobs:
           for app in api worker admin storefront; do
             nohup pnpm --filter "@workeasy/$app" start > "$RUNNER_TEMP/$app.log" 2>&1 &
           done
-          npx --yes wait-on@8.0.3 --timeout 120000 http://localhost:4000/health http://localhost:3000 http://localhost:3001/s/demo
+          npx --yes wait-on@8.0.3 --timeout 180000 http://localhost:4000/health/ready http://localhost:3000/healthz http://localhost:3001/healthz http://localhost:3001/s/demo
       - name: Performance budgets
         run: pnpm check:budgets --store demo
       - name: Accessibility audit (axe, keyboard, phone widths, dark mode)
