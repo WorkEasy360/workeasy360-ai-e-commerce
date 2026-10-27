@@ -69,6 +69,8 @@ export interface StoreSummary {
 export interface Me {
   user: { id: string; displayName: string | null };
   stores: StoreSummary[];
+  /** Where shops live, from the server's settings (not fixed when the admin was built). */
+  storefrontOrigin: string;
 }
 
 export interface Store {
@@ -91,8 +93,21 @@ export interface StoreResponse {
   permissions: string[];
 }
 
-export const STOREFRONT_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001";
+/**
+ * The storefront's origin. The server sends it with /api/v1/me, which the
+ * admin loads before any store page, so one image works at any address; the
+ * build-time value is only a fallback for local development.
+ */
+let storefrontOrigin = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001";
+
+export function setStorefrontOrigin(origin: string): void {
+  storefrontOrigin = origin.replace(/\/$/, "");
+}
+
+export function storefrontBase(): string {
+  return storefrontOrigin;
+}
 
 export function storefrontUrl(slug: string): string {
-  return `${STOREFRONT_URL}/s/${slug}`;
+  return `${storefrontOrigin}/s/${slug}`;
 }

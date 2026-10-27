@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { formatMoney } from "@workeasy/commerce";
 import { AnalyticsIcon, Card, ConversionIcon, DownloadIcon, EmptyState, OrderIcon, Page, PageHeader, RevenueIcon, StatCard, UsersIcon } from "@workeasy/ui/react";
 import { BarList, change, Funnel, LineChart } from "../../../../components/charts";
-import { api, errorMessage } from "../../../../lib/api";
+import { api, errorMessage, storefrontUrl } from "../../../../lib/api";
 import type { AnalyticsReport } from "../../../../lib/analytics";
 import { moduleByKey } from "../../../../lib/modules";
 import { useStore } from "../store-shell";
@@ -90,7 +90,7 @@ export function AnalyticsView() {
           icon={<AnalyticsIcon size={26} />}
           title="No visits yet"
           actions={
-            <a className="c-btn c-btn-primary" href={`${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001"}/s/${store.slug}`} target="_blank" rel="noreferrer">
+            <a className="c-btn c-btn-primary" href={storefrontUrl(store.slug)} target="_blank" rel="noreferrer">
               Visit your store
             </a>
           }

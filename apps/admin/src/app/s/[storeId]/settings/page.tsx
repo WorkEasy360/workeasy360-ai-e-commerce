@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { Card } from "@workeasy/ui/react";
-import { api, errorMessage, STOREFRONT_URL, type StoreResponse } from "../../../../lib/api";
+import { api, errorMessage, storefrontBase, type StoreResponse } from "../../../../lib/api";
 import { COUNTRIES, CURRENCIES, LANGUAGES } from "../../../../lib/store-options";
 import { SlugField } from "../../../slug-field";
 import { useStore } from "../store-shell";
@@ -79,12 +79,12 @@ export default function GeneralSettingsPage() {
             <input id={ids.name} className="c-input" value={form.name} onChange={(e) => set("name")(e.target.value)} maxLength={120} required />
           </div>
           {canChangeAddress ? (
-            <SlugField id={ids.slug} value={form.slug} current={store.slug} onChange={set("slug")} storefrontUrl={STOREFRONT_URL} />
+            <SlugField id={ids.slug} value={form.slug} current={store.slug} onChange={set("slug")} storefrontUrl={storefrontBase()} />
           ) : (
             <div className="c-field">
               <span className="c-label">Store address</span>
               <p className="c-hint">
-                {STOREFRONT_URL.replace(/^https?:\/\//, "")}/s/{store.slug}. Only owners can change it.
+                {storefrontBase().replace(/^https?:\/\//, "")}/s/{store.slug}. Only owners can change it.
               </p>
             </div>
           )}

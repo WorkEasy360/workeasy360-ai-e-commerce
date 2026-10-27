@@ -85,6 +85,8 @@ const Permissions = z.array(z.enum(STORE_PERMISSIONS));
 export const MeResponseSchema = z.object({
   user: z.object({ id: Uuid, displayName: z.string().nullable() }),
   stores: z.array(z.object({ id: Uuid, name: z.string(), slug: z.string(), role: Role, permissions: Permissions })),
+  /** Public origin of the storefront (shops at <origin>/s/<slug>), from the server's settings at runtime. */
+  storefrontOrigin: z.url(),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 

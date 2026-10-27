@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatMoney } from "@workeasy/commerce";
 import { ArrowLeftIcon, CartIcon, EmptyState, Page, PageHeader, PhoneIcon } from "@workeasy/ui/react";
-import { api, errorMessage } from "../../../../../lib/api";
+import { api, errorMessage, storefrontUrl } from "../../../../../lib/api";
 import { useStore } from "../../store-shell";
 
 interface Abandoned {
@@ -37,7 +37,7 @@ export default function AbandonedPage() {
   if (!ctx) return null;
   const { base, store } = ctx;
   const locale = `${store.defaultLocale}-${store.country}`;
-  const shopUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001"}/s/${store.slug}/cart`;
+  const shopUrl = `${storefrontUrl(store.slug)}/cart`;
   const nudge = (a: Abandoned) => `Hi${a.name ? ` ${a.name.split(" ")[0]}` : ""}! You left ${a.items.map((i) => i.title).filter(Boolean).join(", ")} in your cart at ${store.name}. It's still waiting for you: ${shopUrl}`;
 
   return (

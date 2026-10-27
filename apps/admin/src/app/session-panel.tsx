@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRightIcon, PlusIcon } from "@workeasy/ui/react";
-import { api, ApiError, type Me } from "../lib/api";
+import { api, ApiError, setStorefrontOrigin, type Me } from "../lib/api";
 import { CreateStore } from "./create-store";
 import { SignIn } from "./sign-in";
 
@@ -19,7 +19,7 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
 
   useEffect(() => {
     let cancelled = false;
-    api<Me>("/api/v1/me")
+    api<Me>("/api/v1/me").then((me) => (setStorefrontOrigin(me.storefrontOrigin), me))
       .then((me) => {
         if (cancelled) return;
         if (returnTo) window.location.replace(returnTo);

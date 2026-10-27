@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
-import { api, errorMessage, STOREFRONT_URL, type StoreResponse } from "../lib/api";
+import { api, errorMessage, storefrontBase, type StoreResponse } from "../lib/api";
 import { COUNTRIES, CURRENCIES, slugify } from "../lib/store-options";
 import { SlugField } from "./slug-field";
 
@@ -62,7 +62,7 @@ export function CreateStore({ first, greeting }: { first: boolean; greeting: str
       <SlugField
         id={ids.slug}
         value={slug}
-        storefrontUrl={STOREFRONT_URL}
+        storefrontUrl={storefrontBase()}
         onChange={(value) => {
           setSlugEdited(true);
           setSlug(value);

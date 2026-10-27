@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source.
   transpilePackages: ["@workeasy/ui", "@workeasy/commerce"],
   env: {
-    // "View store" links point at the storefront app.
+    // Local-development fallback for storefront links; deployed admins get the
+    // address from the API at runtime (/api/v1/me), so one image fits any domain.
     NEXT_PUBLIC_STOREFRONT_URL: process.env.STOREFRONT_PUBLIC_URL ?? "http://localhost:3001",
   },
   async rewrites() {

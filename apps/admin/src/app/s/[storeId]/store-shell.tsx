@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark, CloseIcon, ExternalIcon, LogoutIcon, MenuIcon, PlusIcon, StoreIcon } from "@workeasy/ui/react";
 import { ThemeToggle } from "@workeasy/ui/theme-toggle";
-import { api, ApiError, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
+import { api, ApiError, setStorefrontOrigin, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
 import { MODULE_GROUPS, MODULES } from "../../../lib/modules";
 
 export interface StoreContextValue {
@@ -53,7 +53,7 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api<Me>("/api/v1/me"), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
+    Promise.all([api<Me>("/api/v1/me").then((me) => (setStorefrontOrigin(me.storefrontOrigin), me)), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
       .then(([me, detail]) => {
         if (!cancelled) setState({ kind: "ready", me, detail });
       })
