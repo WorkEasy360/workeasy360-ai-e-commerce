@@ -189,7 +189,7 @@ export function CheckoutForm({
       <div className="sf-two">
         <div className="sf-steps">
           {problems.length > 0 && (
-            <div className="c-card" role="alert" style={{ borderColor: "var(--we-color-danger)" }}>
+            <div className="c-card" role="alert" style={{ borderColor: "var(--we-error)" }}>
               <strong>{t("checkout.problems")}</strong>
               <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
                 {problems.map((p, i) => (

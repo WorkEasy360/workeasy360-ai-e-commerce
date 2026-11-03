@@ -11,12 +11,12 @@ import { useStore } from "../../store-shell";
 import { FulfilDialog, RefundDialog } from "./order-dialogs";
 
 const EVENT_DOT: Record<string, string> = {
-  placed: "var(--we-color-accent)",
-  paid: "var(--we-color-success)",
-  fulfilled: "var(--we-color-teal)",
-  cancelled: "var(--we-color-danger)",
-  refunded: "var(--we-color-warning)",
-  payment_failed: "var(--we-color-danger)",
+  placed: "var(--we-info)",
+  paid: "var(--we-success)",
+  fulfilled: "var(--we-primary)",
+  cancelled: "var(--we-error)",
+  refunded: "var(--we-warning)",
+  payment_failed: "var(--we-error)",
 };
 
 const REFUND_STATUS = { pending: { label: "Processing", tone: "warning" }, succeeded: { label: "Refunded", tone: "success" }, failed: { label: "Failed", tone: "danger" } } as const;
@@ -189,8 +189,8 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
                   <dd>{money(order.taxMinor)}</dd>
                 </>
               )}
-              <dt style={{ textAlign: "left", fontWeight: 700, color: "var(--we-color-text)" }}>Total</dt>
-              <dd style={{ fontWeight: 800, fontSize: 17 }}>{money(order.totalMinor)}</dd>
+              <dt style={{ textAlign: "left", fontWeight: 600, color: "var(--we-text-primary)" }}>Total</dt>
+              <dd style={{ fontWeight: 600, fontSize: "var(--we-font-size-lg)" }}>{money(order.totalMinor)}</dd>
               {order.taxLabel && order.pricesIncludeTax && order.taxMinor > 0 && (
                 <>
                   <dt style={{ textAlign: "left" }}>{order.taxLabel} included</dt>
@@ -201,8 +201,8 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
                 <>
                   <dt style={{ textAlign: "left" }}>Refunded</dt>
                   <dd>−{money(order.refundedMinor)}</dd>
-                  <dt style={{ textAlign: "left", fontWeight: 700, color: "var(--we-color-text)" }}>Net</dt>
-                  <dd style={{ fontWeight: 700 }}>{money(order.totalMinor - order.refundedMinor)}</dd>
+                  <dt style={{ textAlign: "left", fontWeight: 600, color: "var(--we-text-primary)" }}>Net</dt>
+                  <dd style={{ fontWeight: 600 }}>{money(order.totalMinor - order.refundedMinor)}</dd>
                 </>
               )}
             </dl>
@@ -248,7 +248,7 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
             <ol className="c-checklist">
               {events.map((e) => (
                 <li key={e.id} style={{ alignItems: "flex-start" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", marginTop: 6, flex: "none", background: EVENT_DOT[e.kind] ?? "var(--we-color-border)" }} aria-hidden="true" />
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", marginTop: 6, flex: "none", background: EVENT_DOT[e.kind] ?? "var(--we-border-strong)" }} aria-hidden="true" />
                   <div>
                     <strong>{e.message}</strong>
                     <span>

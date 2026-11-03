@@ -742,7 +742,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
                   <input id={`${ids.title}-cap`} className="c-input" inputMode="numeric" value={form.bookingCapacity} disabled={!manage} onChange={(e) => set("bookingCapacity", e.target.value)} />
                 </Field>
               </div>
-              <h3 style={{ fontSize: 14.5, margin: "16px 0 8px" }}>Hours you take bookings</h3>
+              <h3 style={{ fontSize: "var(--we-font-size-md)", margin: "16px 0 8px" }}>Hours you take bookings</h3>
               <HoursEditor idPrefix={`${ids.title}-hours`} value={form.bookingHours} disabled={!manage} onChange={(h) => set("bookingHours", h)} />
               <p className="c-hint" style={{ marginTop: 10 }}>
                 Shoppers pick from slots of the length above, in your store&apos;s time zone ({store.timezone}). See upcoming bookings under Orders → Bookings.

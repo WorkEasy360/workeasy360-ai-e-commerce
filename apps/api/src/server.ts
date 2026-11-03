@@ -1,3 +1,4 @@
+import { providerFromSettings } from "@workeasy/ai";
 import { createDb } from "@workeasy/database";
 import { createObjectStore } from "@workeasy/files";
 import { parseSecretKey } from "@workeasy/payments";
@@ -57,6 +58,7 @@ const app = createApp({
           allowInsecureRequests: config.NODE_ENV !== "production" && new URL(config.OIDC_ISSUER_URL).protocol === "http:",
         })
       : passwordOnly,
+  assistant: providerFromSettings(config),
   settings: {
     adminOrigin,
     storefrontOrigin: new URL(config.STOREFRONT_PUBLIC_URL).origin,
@@ -66,6 +68,7 @@ const app = createApp({
     homeRegion: config.HOME_REGION,
     aiProvider: config.AI_PROVIDER,
     aiDailyLimit: config.AI_DAILY_LIMIT,
+    assistantDailyLimit: config.ASSISTANT_DAILY_LIMIT,
     ...(config.API_PUBLIC_URL ? { apiOrigin: new URL(config.API_PUBLIC_URL).origin } : {}),
   },
 });

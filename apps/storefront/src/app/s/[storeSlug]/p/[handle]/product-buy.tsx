@@ -70,7 +70,7 @@ export function ProductBuy({ slug, product, currency, locale }: { slug: string; 
     <div className="sf-product">
       <div className="sf-gallery">
         <div className="sf-gallery-main">
-          {current?.kind === "video" ? <video src={mediaUrl(current.id)} controls playsInline /> : <ProductImage id={current?.id ?? null} alt={current?.alt ?? product.title} />}
+          {current?.kind === "video" ? <video src={mediaUrl(current.id)} controls playsInline /> : <ProductImage id={current?.id ?? null} alt={current?.alt ?? product.title} title={product.title} />}
         </div>
         {media.length > 1 && (
           <div className="sf-thumbs" role="group" aria-label={t("product.photos")}>

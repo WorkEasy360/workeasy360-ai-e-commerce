@@ -269,7 +269,7 @@ export function ReviewsView() {
                 <BarList
                   rows={summary.histogram.map((n, i) => ({ key: String(5 - i), label: `${5 - i} star${i === 4 ? "" : "s"}`, value: n }))}
                   format={(v) => String(v)}
-                  color="var(--we-chart-3)"
+                  color="var(--we-rating)"
                   empty=""
                 />
               </>

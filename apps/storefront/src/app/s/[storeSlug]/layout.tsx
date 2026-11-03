@@ -18,8 +18,7 @@ export default async function ShopLayout({ params, children }: { params: Promise
   const i18n = await shopI18n(shop);
   const { t } = i18n;
   const vars = themeCssVars(theme);
-  // The logo gradient is the platform's look; a store with its own colour uses that instead.
-  const style = { ...vars, ...(theme.colors.accent.toUpperCase() !== "#1257C6" ? { "--we-gradient-brand": theme.colors.accent } : {}) } as CSSProperties;
+  const style = vars as CSSProperties;
   const base = `/s/${store.slug}`;
   return (
     <I18nProvider lang={i18n.lang} country={store.country}>

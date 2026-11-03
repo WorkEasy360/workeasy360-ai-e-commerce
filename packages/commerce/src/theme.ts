@@ -84,7 +84,8 @@ export function defaultTheme(defaultLanguage = "en"): Theme {
   const lang = (STORE_LANGUAGES.find((l) => l.code === defaultLanguage.split("-")[0])?.code ?? "en") as StoreLanguage;
   return {
     version: 1,
-    colors: { accent: "#1257C6", dark: "#071C45" },
+    // Green buttons (white text at 5:1) on navy panels: the WorkEasy palette, until the merchant picks theirs.
+    colors: { accent: "#15803D", dark: "#1B3040" },
     font: "modern",
     buttons: "rounded",
     logoMediaId: null,
@@ -219,8 +220,8 @@ export function themeCssVars(t: Pick<Theme, "colors" | "font" | "buttons">): Rec
   };
   const radius = { rounded: "14px", pill: "999px", square: "4px" };
   return {
-    "--we-color-accent": t.colors.accent,
-    "--we-color-navy": t.colors.dark,
+    "--we-accent": t.colors.accent,
+    "--we-primary": t.colors.dark,
     "--sf-on-accent": textOn(t.colors.accent),
     "--sf-on-dark": textOn(t.colors.dark),
     "--sf-font": fonts[t.font],

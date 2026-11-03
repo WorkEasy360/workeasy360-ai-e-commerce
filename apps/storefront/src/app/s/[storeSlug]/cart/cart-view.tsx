@@ -45,7 +45,7 @@ export function CartView({ slug, currency, locale }: { slug: string; currency: s
             return (
               <div key={`${line.variantId}${line.bookingAt ?? ""}`} className="sf-line">
                 <a className="sf-line-img" href={`/s/${slug}/p/${line.handle}`} tabIndex={-1} aria-hidden="true">
-                  <ProductImage id={fresh?.imageId ?? line.imageId} alt="" />
+                  <ProductImage id={fresh?.imageId ?? line.imageId} alt="" title={fresh?.title ?? line.title} />
                 </a>
                 <div style={{ minWidth: 0 }}>
                   <a className="sf-line-title" href={`/s/${slug}/p/${line.handle}`}>

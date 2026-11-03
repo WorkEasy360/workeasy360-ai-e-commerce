@@ -2,10 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { BrandMark, CloseIcon, ExternalIcon, LogoutIcon, MenuIcon, PlusIcon, StoreIcon } from "@workeasy/ui/react";
+import { BrandMark, CloseIcon, ExternalIcon, LogoutIcon, MenuIcon, PlusIcon, SettingsIcon, StoreIcon } from "@workeasy/ui/react";
 import { ThemeToggle } from "@workeasy/ui/theme-toggle";
 import { api, ApiError, setStorefrontOrigin, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
 import { MODULE_GROUPS, MODULES } from "../../../lib/modules";
+import { AssistantPanel } from "./assistant-panel";
+import { GlobalSearch, Notifications } from "./shell-tools";
 
 export interface StoreContextValue {
   store: Store;
@@ -40,9 +42,11 @@ function initials(name: string): string {
 }
 
 /**
- * The admin frame for one store: a navy sidebar of the modules the user may
- * open, grouped as in docs/01-design-system.md, and a top bar with the store switcher, a link
- * to the live storefront, the theme toggle and the account menu.
+ * The admin frame for one store, the WorkEasy360 application shell: a navy
+ * sidebar of the modules the user may open, grouped as in
+ * docs/01-design-system.md, and a top bar with the store switcher, search,
+ * a link to the live storefront, notifications, settings, the theme toggle
+ * and the account menu.
  */
 export function StoreShell({ storeId, children }: { storeId: string; children: ReactNode }) {
   const pathname = usePathname();
@@ -72,7 +76,7 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
     const copy = {
       "signed-out": { title: "Your session has ended", text: "Sign in again to continue where you left off.", action: "Sign in" },
       "not-found": { title: "Store not found", text: "It doesn't exist or you don't have access to it.", action: "Your stores" },
-      error: { title: "We couldn't reach Workeasy360", text: "Check your connection and try again.", action: "Try again" },
+      error: { title: "We couldn't reach Workeasy", text: "Check your connection and try again.", action: "Try again" },
     }[state.kind];
     return (
       <main className="c-center-page">
@@ -115,9 +119,9 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
       </a>
       <nav className="c-sidebar" aria-label="Store">
         <a className="c-sidebar-brand" href={base}>
-          <BrandMark size={30} idPrefix="sidebar-mark" />
+          <BrandMark size={30} />
           <span>
-            Workeasy360
+            Workeasy
             <small>AI Commerce</small>
           </span>
         </a>
@@ -176,11 +180,19 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
           ) : (
             <div className="c-skeleton" style={{ width: 160 }} />
           )}
+          {context && <GlobalSearch base={base} can={can} stores={otherStores} />}
         </div>
         <div className="c-topbar-end">
           {ready && (
             <a className="c-btn c-btn-sm c-hide-sm" href={storefrontUrl(ready.detail.store.slug)} target="_blank" rel="noreferrer">
               <ExternalIcon size={15} /> View store
+            </a>
+          )}
+          {ready && <span className="c-topbar-divider c-hide-sm" aria-hidden="true" />}
+          {context && <Notifications storeId={storeId} base={base} can={can} />}
+          {context && can("settings.manage") && (
+            <a className="c-btn c-btn-ghost c-btn-icon c-hide-sm" href={`${base}/settings`} aria-label="Settings" title="Settings">
+              <SettingsIcon />
             </a>
           )}
           <ThemeToggle />
@@ -231,6 +243,7 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
           </div>
         )}
       </main>
+      {context && <AssistantPanel storeId={storeId} can={can} userName={context.userName} />}
     </div>
   );
 }

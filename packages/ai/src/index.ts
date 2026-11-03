@@ -5,6 +5,24 @@
  * a proposal the merchant applies or discards, never a direct change.
  */
 export { AI_PROVIDERS, providerFromSettings, type AiProviderName, type AiSettings } from "./config.js";
+export {
+  ASSISTANT_ACTIONS,
+  ASSISTANT_PAGES,
+  ASSISTANT_PROMPT,
+  ASSISTANT_TOOLS,
+  ASSISTANT_TURN_MS,
+  assistantCapabilities,
+  assistantSystem,
+  MAX_TOOL_CALLS,
+  parseAssistantReply,
+  runAssistantTurn,
+  type AssistantContext,
+  type AssistantMessage,
+  type AssistantReply,
+  type AssistantTurn,
+  type Navigation,
+  type ProposedAction,
+} from "./assistant.js";
 export { PROVIDER_TIMEOUT_MS, runTask, type GenerationResult } from "./generate.js";
 export { geminiProvider } from "./gemini.js";
 export { openAiProvider } from "./openai.js";

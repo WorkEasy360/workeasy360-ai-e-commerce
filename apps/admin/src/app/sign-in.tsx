@@ -49,7 +49,7 @@ export function SignIn({ signInFailed, returnTo }: { signInFailed: boolean; retu
   return (
     <form className="c-card c-form" onSubmit={submit}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 22 }}>{signingUp ? "Start selling online" : "Sign in"}</h1>
+        <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>{signingUp ? "Start selling online" : "Sign in"}</h1>
         <p className="c-subtitle" style={{ marginTop: 4 }}>
           {signingUp ? "Create your account, then set up your store in a minute." : "Welcome back. Sign in to manage your stores."}
         </p>
@@ -99,7 +99,7 @@ export function SignIn({ signInFailed, returnTo }: { signInFailed: boolean; retu
         {busy ? (signingUp ? "Creating account…" : "Signing in…") : signingUp ? "Create account" : "Sign in"}
       </button>
       <p style={{ margin: 0, fontSize: 14 }}>
-        {signingUp ? "Already have an account? " : "New to Workeasy360 Commerce? "}
+        {signingUp ? "Already have an account? " : "New to Workeasy AI Commerce? "}
         <button type="button" className="c-link-btn" onClick={() => switchTo(signingUp ? "sign-in" : "sign-up")}>
           {signingUp ? "Sign in" : "Create an account"}
         </button>

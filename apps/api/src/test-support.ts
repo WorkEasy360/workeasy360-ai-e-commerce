@@ -1,3 +1,4 @@
+import { stubProvider } from "@workeasy/ai";
 import type { IdentityProvider } from "@workeasy/auth";
 import type { Db } from "@workeasy/database";
 import { createObjectStore, type ObjectStore } from "@workeasy/files";
@@ -20,6 +21,7 @@ export const testSettings: AppSettings = {
   secureCookies: false,
   aiProvider: "stub",
   aiDailyLimit: 5,
+  assistantDailyLimit: 6,
 };
 
 /**
@@ -75,6 +77,7 @@ export function buildTestApp(
     payments: { fetch: gatewayFetch, secretsKey: TEST_SECRETS_KEY },
     ...(resolveTxt ? { resolveTxt } : {}),
     identityProvider,
+    assistant: settings.aiProvider === "disabled" ? undefined : stubProvider(),
     settings,
     readinessChecks: { database: () => sql`SELECT 1`.execute(db) },
     isDraining: () => false,

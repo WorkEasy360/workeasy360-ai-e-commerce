@@ -48,7 +48,7 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
   if (state.kind === "error") {
     return (
       <p className="c-card" role="alert">
-        We couldn&apos;t reach Workeasy360. Check your connection and <a href="/">try again</a>.
+        We couldn&apos;t reach Workeasy. Check your connection and <a href="/">try again</a>.
       </p>
     );
   }
@@ -77,7 +77,7 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
     <>
       <section className="c-card" style={{ display: "grid", gap: 14 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20 }}>Welcome back, {name}</h1>
+          <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>Welcome back, {name}</h1>
           <p className="c-subtitle" style={{ marginTop: 4 }}>
             Choose a store to manage.
           </p>

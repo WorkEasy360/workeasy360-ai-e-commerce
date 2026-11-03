@@ -251,7 +251,7 @@ export function AiView() {
         subtitle={mod.summary}
         actions={
           list && (
-            <span className="c-muted" style={{ fontSize: 13.5 }}>
+            <span className="c-muted" style={{ fontSize: "var(--we-font-size-sm)" }}>
               {list.usedToday} of {list.dailyLimit} today{list.provider === "stub" ? " · Demo AI (no provider connected)" : ""}
             </span>
           )

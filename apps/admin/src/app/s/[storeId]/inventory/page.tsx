@@ -345,7 +345,7 @@ export default function InventoryPage() {
                         <td data-label="SKU" className="c-mono">
                           {r.sku ?? "—"}
                         </td>
-                        <td data-label="Available" className="c-num" style={r.available <= 0 ? { color: "var(--we-color-danger)", fontWeight: 700 } : low ? { color: "var(--we-color-warning)", fontWeight: 700 } : undefined}>
+                        <td data-label="Available" className="c-num" style={r.available <= 0 ? { color: "var(--we-error)", fontWeight: 600 } : low ? { color: "var(--we-warning-text)", fontWeight: 600 } : undefined}>
                           {r.available}
                         </td>
                         <td data-label="On hand" className="c-num">

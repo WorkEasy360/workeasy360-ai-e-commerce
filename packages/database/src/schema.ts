@@ -669,6 +669,7 @@ export interface AiUsageDaysTable {
   day: ColumnType<string, string, string>;
   generations: Generated<number>;
   tokens: Generated<number>;
+  assistant_messages: Generated<number>;
 }
 
 export interface StoreThemesTable {

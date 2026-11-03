@@ -9,7 +9,7 @@ export const hi: Record<keyof typeof en, string> = {
   "cart.aria.other": "कार्ट, {n} आइटम",
   "language.label": "भाषा",
   "footer.label": "फ़ुटर",
-  "footer.powered": "Workeasy360 Commerce द्वारा संचालित",
+  "footer.powered": "Workeasy AI Commerce द्वारा संचालित",
   "preview.bar": "आप अपने अप्रकाशित डिज़ाइन का पूर्वावलोकन देख रहे हैं।",
   "preview.exit": "पूर्वावलोकन बंद करें",
   "announcement.label": "घोषणा",

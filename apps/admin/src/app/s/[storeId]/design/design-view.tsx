@@ -54,7 +54,7 @@ function ColorField({ id, label, value, onChange, hint }: { id: string; label: s
   return (
     <Field id={id} label={label} hint={ratio < 4.5 ? `Text on this colour is hard to read (contrast ${ratio.toFixed(1)}:1). Try a deeper shade.` : hint}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input type="color" aria-label={`${label} picker`} value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} style={{ width: 44, height: 40, padding: 2, border: "1px solid var(--we-color-border)", borderRadius: 10, background: "none" }} />
+        <input type="color" aria-label={`${label} picker`} value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} className="c-color-swatch" />
         <input
           id={id}
           className="c-input"

@@ -48,6 +48,15 @@ const ConfigSchema = z
     /** Must match the worker's: the API only uses it to show or hide AI Studio's generate actions. */
     AI_PROVIDER: z.preprocess(unsetIfEmpty, z.enum(["disabled", "stub", "openai", "gemini"]).default("disabled")),
     AI_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000).default(100),
+    /**
+     * The admin assistant answers within the request, so the API calls the
+     * provider itself, with the same AI_PROVIDER, AI_MODEL and key as the worker.
+     */
+    AI_MODEL: z.preprocess(unsetIfEmpty, z.string().max(100).optional()),
+    OPENAI_API_KEY: z.preprocess(unsetIfEmpty, z.string().optional()),
+    GEMINI_API_KEY: z.preprocess(unsetIfEmpty, z.string().optional()),
+    /** Assistant questions per store per day. */
+    ASSISTANT_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000).default(200),
   })
   .superRefine((config, ctx) => {
     const oidc = [config.OIDC_ISSUER_URL, config.OIDC_CLIENT_ID, config.OIDC_CLIENT_SECRET].filter(Boolean).length;

@@ -11,6 +11,7 @@ export function stubProvider(): JsonCompletionProvider {
     name: "stub",
     model: "stub-1",
     complete(request: CompletionRequest) {
+      if (request.system.startsWith("# Workeasy AI Commerce assistant")) return Promise.resolve(stubAssistant(request));
       const prompt = request.messages[0]?.content ?? "";
       const data = (() => {
         const m = /<data>\n([\s\S]*?)\n<\/data>/.exec(prompt);
@@ -60,4 +61,54 @@ export function stubProvider(): JsonCompletionProvider {
       return Promise.resolve({ text, usage: { inputTokens: Math.ceil((request.system.length + prompt.length) / 4), outputTokens: Math.ceil(text.length / 4) } });
     },
   };
+}
+
+/**
+ * The assistant's side of the stub: routes a question to one tool by its
+ * words, then answers with what the tool returned. Enough to exercise the
+ * whole loop (tools, navigation, proposals) without a model.
+ */
+function stubAssistant(request: CompletionRequest): { text: string; usage: { inputTokens: number; outputTokens: number } } {
+  const last = request.messages.at(-1)?.content ?? "";
+  const question = request.messages.findLast((m) => m.role === "user" && !m.content.startsWith("<tool_result"))?.content.toLowerCase() ?? "";
+  const tools = new Set([...request.system.matchAll(/^- ([a-z_]+) [{]/gm)].map((m) => m[1]));
+  const number = /#\s*(\d{1,9})\b|\border\s+(\d{1,9})\b/.exec(question);
+  const orderNumber = number ? Number(number[1] ?? number[2]) : undefined;
+  let out: unknown;
+  const result = /^<tool_result name="([a-z_]+)">\n([\s\S]*)\n<\/tool_result>$/.exec(last);
+  if (result) {
+    const [, tool, body] = result;
+    let data: Record<string, unknown> = {};
+    try {
+      data = JSON.parse(body!) as Record<string, unknown>;
+    } catch {
+      // Truncated results are summarised without their contents.
+    }
+    if (data.error) out = { type: "answer", text: `I couldn't get that: ${String(data.error)}`, navigate: null, action: null };
+    else if (tool === "get_order" && /\b(paid|received)\b/.test(question) && orderNumber)
+      out = { type: "answer", text: `Order #${orderNumber} is ready to be marked as paid. Confirm below once you're sure the money has arrived.`, navigate: null, action: { kind: "mark_order_paid", orderNumber } };
+    else {
+      const items = Array.isArray(data.items) ? data.items.length : undefined;
+      out = { type: "answer", text: items === undefined ? `Here's what I found (${tool}).` : `I found ${items} result${items === 1 ? "" : "s"} (${tool}).`, navigate: null, action: null };
+    }
+  } else if (/\b(open|go to|take me)\b/.test(question)) {
+    const page = ["orders", "products", "inventory", "analytics", "offers", "reviews", "settings"].find((p) => question.includes(p)) ?? "dashboard";
+    out = { type: "answer", text: `Opening ${page}.`, navigate: page, action: null };
+  } else {
+    const route: Array<[RegExp, string, Record<string, unknown>]> = [
+      [/\b(paid|orders?)\b/, orderNumber ? "get_order" : "search_orders", orderNumber ? { number: orderNumber } : {}],
+      [/\b(stock|inventory)\b/, "stock_report", { filter: "low" }],
+      [/\b(sales|revenue|visitors|best)\b/, "sales_report", { days: 30 }],
+      [/\bproducts?\b/, "search_products", {}],
+      [/\bcustomers?\b/, "search_customers", {}],
+      [/\b(offers?|discounts?|codes?)\b/, "list_offers", {}],
+      [/\breviews?\b/, "pending_reviews", {}],
+      [/\b(payments?|razorpay|stripe|upi)\b/, "payment_setup", {}],
+      [/\bbookings?\b/, "list_bookings", {}],
+    ];
+    const hit = route.find(([re, tool]) => re.test(question) && tools.has(tool));
+    out = hit ? { type: "tool", tool: hit[1], args: hit[2] } : { type: "answer", text: "I can look up orders, products, stock, customers, sales and more for this store. What would you like to know?", navigate: null, action: null };
+  }
+  const text = JSON.stringify(out);
+  return { text, usage: { inputTokens: Math.ceil((request.system.length + last.length) / 4), outputTokens: Math.ceil(text.length / 4) } };
 }

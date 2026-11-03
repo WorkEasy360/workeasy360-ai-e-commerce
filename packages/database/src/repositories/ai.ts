@@ -94,6 +94,36 @@ export async function listGenerations(trx: Trx, opts: { targetId?: string | unde
   return (await q.execute()).map(toGeneration);
 }
 
+// Assistant ----------------------------------------------------------------------------------------
+
+export async function assistantUsedToday(trx: Trx): Promise<number> {
+  const r = await trx.selectFrom("ai_usage_days").select("assistant_messages").where("day", "=", sql<string>`current_date`).executeTakeFirst();
+  return r?.assistant_messages ?? 0;
+}
+
+/**
+ * Takes one assistant question from today's allowance, or reports the limit.
+ * The usage row is locked while it's counted, so parallel questions can't
+ * go over.
+ */
+export async function takeAssistantMessage(trx: Trx, storeId: string, dailyLimit: number): Promise<{ kind: "ok"; used: number } | { kind: "limit"; limit: number }> {
+  await trx
+    .insertInto("ai_usage_days")
+    .values({ store_id: storeId, day: sql<string>`current_date` })
+    .onConflict((oc) => oc.columns(["store_id", "day"]).doNothing())
+    .execute();
+  const usage = await trx.selectFrom("ai_usage_days").select("assistant_messages").where("day", "=", sql<string>`current_date`).forUpdate().executeTakeFirstOrThrow();
+  if (usage.assistant_messages >= dailyLimit) return { kind: "limit", limit: dailyLimit };
+  await trx.updateTable("ai_usage_days").set((eb) => ({ assistant_messages: eb("assistant_messages", "+", 1) })).where("day", "=", sql<string>`current_date`).execute();
+  return { kind: "ok", used: usage.assistant_messages + 1 };
+}
+
+/** Adds a finished question's tokens to today's AI usage. */
+export async function addAssistantTokens(trx: Trx, tokens: number): Promise<void> {
+  if (tokens <= 0) return;
+  await trx.updateTable("ai_usage_days").set((eb) => ({ tokens: eb("tokens", "+", Math.min(tokens, 1_000_000)) })).where("day", "=", sql<string>`current_date`).execute();
+}
+
 // Worker side ------------------------------------------------------------------------------------
 
 export async function markRunning(trx: Trx, id: string): Promise<Generation | undefined> {

@@ -26,6 +26,7 @@ import { mediaRoutes } from "./media.js";
 import { moneyRoutes } from "./money.js";
 import { engagementRoutes } from "./engagement.js";
 import { studioRoutes } from "./studio.js";
+import { assistantRoutes } from "./assistant.js";
 import { teamRoutes } from "./team.js";
 import { pagesRoutes } from "./pages.js";
 import { rulesRoutes } from "./rules.js";
@@ -285,6 +286,7 @@ export function apiV1Router(deps: AppDependencies): Router {
   rulesRoutes(router, deps, access);
   engagementRoutes(router, deps, access);
   studioRoutes(router, deps, access);
+  assistantRoutes(router, deps, access);
   teamRoutes(router, deps, access);
   pagesRoutes(router, deps, access);
 

@@ -1,3 +1,4 @@
+import type { JsonCompletionProvider } from "@workeasy/ai";
 import express, { type ErrorRequestHandler, type Express } from "express";
 import type { IdentityProvider } from "@workeasy/auth";
 import type { Db } from "@workeasy/database";
@@ -33,6 +34,8 @@ export interface AppSettings {
   aiProvider?: "disabled" | "stub" | "openai" | "gemini";
   /** AI generations per store per day. */
   aiDailyLimit?: number;
+  /** Assistant questions per store per day. */
+  assistantDailyLimit?: number;
 }
 
 export interface AppDependencies {
@@ -47,6 +50,8 @@ export interface AppDependencies {
   /** DNS TXT lookups for verifying custom domains; defaults to the system resolver. */
   resolveTxt?: ResolveTxt;
   identityProvider: IdentityProvider;
+  /** The model behind the admin assistant; absent when AI is disabled. */
+  assistant?: JsonCompletionProvider | undefined;
   settings: AppSettings;
   /** Dependencies that must be reachable for /health/ready (e.g. the database). */
   readinessChecks: Record<string, ReadinessCheck>;

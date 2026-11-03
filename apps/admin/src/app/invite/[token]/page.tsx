@@ -13,7 +13,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <div className="c-auth-brand">
           <BrandMark size={44} />
           <span>
-            <strong>Workeasy360</strong>
+            <strong>Workeasy</strong>
             <small>AI Commerce</small>
           </span>
         </div>

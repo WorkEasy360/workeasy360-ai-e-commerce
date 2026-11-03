@@ -40,7 +40,7 @@ export default async function StoreHome({ params }: { params: Params }) {
     switch (section.type) {
       case "hero":
         return (
-          <section key={section.id} className={`sf-hero${section.imageId ? " sf-hero-image" : ""}`} aria-labelledby={id} style={section.imageId ? { backgroundImage: `linear-gradient(90deg, color-mix(in srgb, var(--we-color-navy) 88%, transparent) 30%, transparent), url(${mediaUrl(section.imageId)})` } : undefined}>
+          <section key={section.id} className={`sf-hero${section.imageId ? " sf-hero-image" : ""}`} aria-labelledby={id} style={section.imageId ? { backgroundImage: `linear-gradient(90deg, color-mix(in srgb, var(--we-primary) 88%, transparent) 30%, transparent), url(${mediaUrl(section.imageId)})` } : undefined}>
             <span className="sf-pill">{open ? t("home.open") : t("home.soon")}</span>
             <h1 id={id}>{section.heading || store.name}</h1>
             <p>{open ? section.text : t("home.stocking")}</p>
@@ -59,9 +59,12 @@ export default async function StoreHome({ params }: { params: Params }) {
             </div>
             <div className="sf-tiles">
               {collections.slice(0, 6).map((c) => (
-                <a key={c.handle} className="sf-tile" href={`${base}/c/${c.handle}`}>
+                <a key={c.handle} className={c.imageId ? "sf-tile" : "sf-tile sf-tile-plain"} href={`${base}/c/${c.handle}`}>
                   {c.imageId && <img src={mediaUrl(c.imageId)} alt="" loading="lazy" />}
                   <span>{c.title}</span>
+                  <small aria-hidden="true">
+                    {t("home.viewAll")} <ArrowRightIcon size={14} />
+                  </small>
                 </a>
               ))}
             </div>

@@ -48,7 +48,7 @@ export function AcceptInvitation({ token }: { token: string }) {
   if (state.kind === "signed-out") {
     return (
       <div className="c-card" style={{ display: "grid", gap: 12, textAlign: "center" }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>You&apos;re invited</h1>
+        <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>You&apos;re invited</h1>
         <p className="c-muted" style={{ margin: 0 }}>
           Sign in, or create an account, to see the store and join it.
         </p>
@@ -61,7 +61,7 @@ export function AcceptInvitation({ token }: { token: string }) {
   if (state.kind === "invalid" || state.kind === "error") {
     return (
       <div className="c-card" role="alert" style={{ display: "grid", gap: 12, textAlign: "center" }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>This invitation can&apos;t be used</h1>
+        <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>This invitation can&apos;t be used</h1>
         <p className="c-muted" style={{ margin: 0 }}>
           {state.message} Ask the person who invited you for a new link.
         </p>
@@ -73,7 +73,7 @@ export function AcceptInvitation({ token }: { token: string }) {
   }
   return (
     <div className="c-card" style={{ display: "grid", gap: 12, textAlign: "center" }}>
-      <h1 style={{ margin: 0, fontSize: 22 }}>Join {state.storeName}</h1>
+      <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>Join {state.storeName}</h1>
       <p className="c-muted" style={{ margin: 0 }}>
         You&apos;ve been invited to help run this store as {ROLE_NAME[state.role] ?? state.role}.
       </p>

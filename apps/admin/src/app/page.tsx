@@ -15,7 +15,7 @@ export default async function HomePage({
         <div className="c-auth-brand">
           <BrandMark size={44} />
           <span>
-            <strong>Workeasy360</strong>
+            <strong>Workeasy</strong>
             <small>AI Commerce</small>
           </span>
         </div>

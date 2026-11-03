@@ -119,6 +119,12 @@ export const SearchIcon = (p: IconProps) => (
     <path d="m20 20-3.5-3.5" />
   </Icon>
 );
+export const BellIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.5 1.8 6.5H4.2S6 14 6 9.5Z" />
+    <path d="M10 19.5a2.1 2.1 0 0 0 4 0" />
+  </Icon>
+);
 export const PlusIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 5v14M5 12h14" />

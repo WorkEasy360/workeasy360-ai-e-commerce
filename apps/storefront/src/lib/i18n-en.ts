@@ -8,7 +8,7 @@ export const en = {
   "cart.aria.other": "Cart, {n} items",
   "language.label": "Language",
   "footer.label": "Footer",
-  "footer.powered": "Powered by Workeasy360 Commerce",
+  "footer.powered": "Powered by Workeasy AI Commerce",
   "preview.bar": "Previewing your unpublished design.",
   "preview.exit": "Exit preview",
   "announcement.label": "Announcement",

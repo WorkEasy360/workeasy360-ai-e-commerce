@@ -12,7 +12,7 @@ export const ar: Record<keyof typeof en, string> & Record<string, string> = {
   "cart.aria.other": "السلة، {n} منتج",
   "language.label": "اللغة",
   "footer.label": "تذييل الصفحة",
-  "footer.powered": "مدعوم من Workeasy360 Commerce",
+  "footer.powered": "مدعوم من Workeasy AI Commerce",
   "preview.bar": "أنت تعاين تصميمًا غير منشور.",
   "preview.exit": "إنهاء المعاينة",
   "announcement.label": "إعلان",

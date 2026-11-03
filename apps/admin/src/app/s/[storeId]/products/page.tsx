@@ -303,7 +303,7 @@ export default function ProductsPage() {
                           <Badge tone={STATUS_TONES[p.status]}>{STATUS_LABELS[p.status]}</Badge>
                         </td>
                         <td data-label="Type">{PRODUCT_TYPE_LABELS[p.type]}</td>
-                        <td data-label="Inventory" style={stock.tone ? { color: `var(--we-color-${stock.tone})`, fontWeight: 600 } : undefined}>
+                        <td data-label="Inventory" style={stock.tone ? { color: `var(--we-${stock.tone === "danger" ? "error" : "warning-text"})`, fontWeight: 600 } : undefined}>
                           {stock.text}
                         </td>
                         <td data-label="Price" className="c-num">

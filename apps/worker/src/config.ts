@@ -34,7 +34,7 @@ const ConfigSchema = z.object({
   SMTP_SECURE: z.stringbool().default(false),
   SMTP_USER: z.preprocess(unsetIfEmpty, z.string().min(1).max(200).optional()),
   SMTP_PASSWORD: z.preprocess(unsetIfEmpty, z.string().min(1).max(500).optional()),
-  MAIL_FROM: z.string().min(3).max(200).default("Workeasy360 Commerce <orders@workeasy.test>"),
+  MAIL_FROM: z.string().min(3).max(200).default("Workeasy AI Commerce <orders@workeasy.test>"),
   /** Links in emails: shoppers' order pages and the merchant admin. */
   STOREFRONT_PUBLIC_URL: z.url().default("http://localhost:3001"),
   ADMIN_PUBLIC_URL: z.url().default("http://localhost:3000"),

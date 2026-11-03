@@ -60,7 +60,7 @@ export async function pay(slug: string, token: string, start: PaymentStart): Pro
       name: start.storeName,
       description: start.description,
       prefill: { name: start.prefill.name, email: start.prefill.email, ...(start.prefill.contact ? { contact: start.prefill.contact } : {}) },
-      theme: { color: "#1257C6" },
+      theme: { color: "#15803D" },
       modal: { ondismiss: () => resolve({ kind: "dismissed" }) },
       handler: async (r: RazorpayResult) => {
         try {

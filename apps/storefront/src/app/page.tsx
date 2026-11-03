@@ -6,7 +6,7 @@ export default function StorefrontHome() {
     <main className="sf-center">
       <div>
         <BrandMark size={64} />
-        <h1>Workeasy360 storefronts</h1>
+        <h1>Workeasy AI Commerce storefronts</h1>
         <p>Each shop has its own address. Check the link the seller shared with you.</p>
       </div>
     </main>

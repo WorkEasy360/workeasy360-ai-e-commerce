@@ -11,14 +11,14 @@ const ROLE_NAMES: Record<string, string> = { owner: "an owner", admin: "an admin
 export function invitationEmail(input: { storeName: string; inviter: string | null; role: string; url: string }): { subject: string; text: string } {
   const who = input.inviter ? `${input.inviter} has invited you` : "You've been invited";
   const text = [
-    `${who} to help run ${input.storeName} on Workeasy360, as ${ROLE_NAMES[input.role] ?? input.role}.`,
+    `${who} to help run ${input.storeName} on Workeasy AI Commerce, as ${ROLE_NAMES[input.role] ?? input.role}.`,
     "",
     "Accept the invitation:",
     input.url,
     "",
     "The link works once and expires in 7 days. If you weren't expecting this, you can ignore it.",
   ].join("\n");
-  return { subject: headerSafe(`Join ${input.storeName} on Workeasy360`), text };
+  return { subject: headerSafe(`Join ${input.storeName} on Workeasy AI Commerce`), text };
 }
 
 export function invitationSendJob(deps: { workerDb: Db; mailer: Mailer | undefined; log?: (level: "info" | "warn" | "error", message: string, fields: Record<string, unknown>) => void }): JobDefinition {

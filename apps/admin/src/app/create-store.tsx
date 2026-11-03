@@ -48,7 +48,7 @@ export function CreateStore({ first, greeting }: { first: boolean; greeting: str
   return (
     <form className="c-card c-form" onSubmit={submit}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 22 }}>{first ? `Let's set up your store, ${greeting}` : "Create another store"}</h1>
+        <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>{first ? `Let's set up your store, ${greeting}` : "Create another store"}</h1>
         <p className="c-subtitle" style={{ marginTop: 4 }}>
           You can change all of this later in Settings.
         </p>

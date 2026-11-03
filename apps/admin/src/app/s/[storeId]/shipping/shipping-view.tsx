@@ -161,7 +161,7 @@ function ZoneDialog({ storeId, currency, country, zone, onDone, onClose }: { sto
         Offer cash on delivery in this zone
       </label>
 
-      <h3 style={{ fontSize: 15, margin: "18px 0 8px" }}>Rates</h3>
+      <h3 style={{ fontSize: "var(--we-font-size-md)", margin: "18px 0 8px" }}>Rates</h3>
       <div style={{ display: "grid", gap: 10 }}>
         {rates.map((r, i) => (
           <div key={i} className="c-rate-row">

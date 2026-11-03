@@ -101,7 +101,7 @@ export default function DomainPage() {
         ) : (
           <div className="c-form">
             <p style={{ margin: 0, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <strong style={{ fontSize: 17 }}>{domain.domain}</strong>
+              <strong style={{ fontSize: "var(--we-font-size-md)" }}>{domain.domain}</strong>
               <Badge tone={domain.status === "verified" ? "success" : "warning"}>{domain.status === "verified" ? "Connected" : "Waiting for DNS"}</Badge>
               {domain.status === "verified" && (
                 <a href={`https://${domain.domain}`} target="_blank" rel="noreferrer">

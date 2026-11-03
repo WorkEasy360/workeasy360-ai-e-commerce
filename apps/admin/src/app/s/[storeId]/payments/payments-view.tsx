@@ -394,7 +394,7 @@ export function PaymentsView() {
                     <td data-label="Status">
                       <Badge tone={e.status === "succeeded" ? "success" : e.status === "failed" ? "danger" : "warning"}>{e.status === "succeeded" ? (e.kind === "payment" ? "Received" : "Refunded") : e.status === "failed" ? "Failed" : "Processing"}</Badge>
                     </td>
-                    <td data-label="Amount" className="c-num" style={e.kind === "refund" ? { color: "var(--we-color-danger)" } : undefined}>
+                    <td data-label="Amount" className="c-num" style={e.kind === "refund" ? { color: "var(--we-error)" } : undefined}>
                       {e.kind === "refund" ? "−" : ""}
                       {money(e.amountMinor, e.currency)}
                     </td>

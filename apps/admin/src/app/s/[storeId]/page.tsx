@@ -287,7 +287,7 @@ export default function DashboardPage() {
         <Card
           title="Set up your store"
           actions={
-            <span className="c-muted" style={{ fontSize: 13.5 }}>
+            <span className="c-muted" style={{ fontSize: "var(--we-font-size-sm)" }}>
               {done} of {steps.length} done
             </span>
           }
@@ -398,7 +398,7 @@ export default function DashboardPage() {
                   <SparkleIcon />
                 </span>
                 <div>
-                  <h2 style={{ fontSize: 16, margin: "0 0 4px" }}>AI Studio</h2>
+                  <h2 style={{ fontSize: "var(--we-font-size-md)", margin: "0 0 4px" }}>AI Studio</h2>
                   <p className="c-muted" style={{ margin: "0 0 12px", fontSize: 14 }}>
                     Describe your shop in a sentence and get product descriptions, SEO and collections drafted for you.
                   </p>

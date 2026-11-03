@@ -102,9 +102,9 @@ function MediaDetails({ storeId, base, media, canDelete, onClose, onChange, onDe
       }
     >
       {media.kind === "image" && media.status === "ready" ? (
-        <img src={mediaUrl(media.id)} alt={media.altText} style={{ width: "100%", borderRadius: 14, border: "1px solid var(--we-color-border)", background: "var(--we-color-surface)" }} />
+        <img src={mediaUrl(media.id)} alt={media.altText} style={{ width: "100%", borderRadius: 12, border: "1px solid var(--we-border)", background: "var(--we-surface-muted)" }} />
       ) : media.kind === "video" && media.status === "ready" ? (
-        <video src={mediaUrl(media.id)} controls style={{ width: "100%", borderRadius: 14 }} />
+        <video src={mediaUrl(media.id)} controls style={{ width: "100%", borderRadius: 12 }} />
       ) : (
         <Thumb media={media} size="lg" />
       )}
@@ -254,7 +254,7 @@ export default function MediaLibraryPage() {
       <PageHeader title={mod.label} eyebrow={mod.group} subtitle={mod.summary} />
       <div className="c-card" style={{ marginBottom: 20, display: "grid", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, fontSize: 16 }}>Upload</h2>
+          <h2 style={{ margin: 0, fontSize: "var(--we-font-size-md)" }}>Upload</h2>
           <div className="c-segmented" role="group" aria-label="What are you uploading?">
             <button type="button" aria-pressed={uploadPurpose === "media"} onClick={() => setUploadPurpose("media")}>
               Images and video
@@ -301,7 +301,7 @@ export default function MediaLibraryPage() {
       {data === undefined ? (
         <div className="c-media-grid" role="status" aria-label="Loading media">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="c-skeleton" style={{ height: 180, borderRadius: 14 }} />
+            <div key={i} className="c-skeleton" style={{ height: 180, borderRadius: 12 }} />
           ))}
         </div>
       ) : items.length === 0 ? (

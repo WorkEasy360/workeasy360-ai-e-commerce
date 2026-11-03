@@ -99,7 +99,7 @@ export default function AuditPage() {
                 <td data-label="When" style={{ whiteSpace: "nowrap" }}>
                   {new Date(e.occurredAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </td>
-                <td data-label="Who">{e.actor.type === "system" ? "Workeasy360" : (e.actor.displayName ?? "Former staff member")}</td>
+                <td data-label="Who">{e.actor.type === "system" ? "Workeasy" : (e.actor.displayName ?? "Former staff member")}</td>
                 <td data-label="What">{describe(e)}</td>
               </tr>
             ))}

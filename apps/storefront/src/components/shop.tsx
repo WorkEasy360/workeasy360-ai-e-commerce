@@ -17,11 +17,30 @@ export function Price({ min, max, compareAt, currency, locale, wasLabel = "Was "
   );
 }
 
-export function ProductImage({ id, alt }: { id: string | null; alt: string }) {
+/** Up to two initials from a product title ("Masala Chai 250 g" → "MC"). */
+function initials(title: string): string {
+  const words = title.split(/\s+/).filter((w) => /^\p{L}/u.test(w));
+  return words.slice(0, 2).map((w) => w[0]!.toLocaleUpperCase()).join("");
+}
+
+/** One of four soft tones, chosen from the title so a product always looks the same. */
+function tone(title: string): number {
+  let h = 0;
+  for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % 4;
+}
+
+/**
+ * A product's photo, or a placeholder when it has none: the title's
+ * initials on one of four soft tones, so a catalogue without photos still
+ * looks deliberate.
+ */
+export function ProductImage({ id, alt, title }: { id: string | null; alt: string; title?: string }) {
   if (!id) {
+    const letters = title ? initials(title) : "";
     return (
-      <span className="sf-placeholder" aria-hidden="true">
-        <ProductIcon size={34} />
+      <span className="sf-placeholder" data-tone={title ? tone(title) : undefined} aria-hidden="true">
+        {letters ? <span className="sf-initials">{letters}</span> : <ProductIcon size={28} />}
       </span>
     );
   }
@@ -40,17 +59,17 @@ export function ProductGrid({ products, slug, currency, locale, labels }: { prod
       {products.map((p) => (
         <a key={p.id} className="sf-card" href={`/s/${slug}/p/${p.handle}`}>
           <span className="sf-card-img">
-            <ProductImage id={p.imageId} alt={p.imageAlt} />
+            <ProductImage id={p.imageId} alt={p.imageAlt} title={p.title} />
             {!p.available ? (
               <span className="c-badge">{labels.soldOut}</span>
             ) : p.compareAtMinor ? (
-              <span className="c-badge" data-tone="brand">
-                {labels.sale}
-              </span>
+              <span className="sf-sale">{labels.sale}</span>
             ) : null}
           </span>
-          <span className="sf-card-title">{p.title}</span>
-          <Price min={p.priceMin} max={p.priceMax} compareAt={p.compareAtMinor} currency={currency} locale={locale} wasLabel={labels.was} />
+          <span className="sf-card-body">
+            <span className="sf-card-title">{p.title}</span>
+            <Price min={p.priceMin} max={p.priceMax} compareAt={p.compareAtMinor} currency={currency} locale={locale} wasLabel={labels.was} />
+          </span>
         </a>
       ))}
     </div>
@@ -70,6 +89,9 @@ export function ShopFooter({
 }) {
   return (
     <footer className="sf-footer">
+      <div className="sf-footer-brand">
+        <strong>{name}</strong>
+      </div>
       {(text || links.length > 0) && (
         <div className="sf-footer-row sf-footer-top">
           {text && <p>{text}</p>}
@@ -87,7 +109,7 @@ export function ShopFooter({
       <div className="sf-footer-row">
         <span>© {name}</span>
         <span className="sf-powered">
-          <BrandMark size={18} idPrefix="footer-mark" /> {labels.powered}
+          <BrandMark size={18} /> {labels.powered}
         </span>
       </div>
     </footer>
