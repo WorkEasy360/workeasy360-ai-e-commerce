@@ -33,6 +33,23 @@ describe("replies", () => {
     expect(parseAssistantReply(answer("Refund", { action: { kind: "refund_order", orderNumber: 7 } }))).toMatchObject({ action: null });
   });
 
+  it("reads product and offer tasks, keeping only known fields", () => {
+    expect(parseAssistantReply(answer("Adding it", { action: { kind: "create_product", title: " Masala Chai ", price: 250, stock: 40, status: "active", evil: "x" } }))).toMatchObject({
+      action: { kind: "create_product", product: { title: "Masala Chai", price: 250, stock: 40, status: "active", compareAtPrice: null, tags: [] } },
+    });
+    // A new product needs a title and a price; it's a draft unless asked otherwise.
+    expect(parseAssistantReply(answer("Adding it", { action: { kind: "create_product", title: "Tea" } }))).toMatchObject({ action: null });
+    expect(parseAssistantReply(answer("Adding it", { action: { kind: "create_product", title: "Tea", price: 10, status: "published" } }))).toMatchObject({ action: { product: { status: "draft" } } });
+    expect(parseAssistantReply(answer("Updating", { action: { kind: "update_product", productId: "0193a2b4-1c2d-7e8f-9a0b-1c2d3e4f5a6b", changes: { price: 280, compareAtPrice: null, stock: -5 } } }))).toMatchObject({
+      action: { kind: "update_product", changes: { price: 280, compareAtPrice: null } },
+    });
+    expect(parseAssistantReply(answer("Updating", { action: { kind: "update_product", productId: "not-an-id", changes: { price: 1 } } }))).toMatchObject({ action: null });
+    expect(parseAssistantReply(answer("Code", { action: { kind: "create_discount", code: "diwali10", type: "percentage", value: 10, minSpend: 999, endsOn: "2026-11-15" } }))).toMatchObject({
+      action: { kind: "create_discount", discount: { code: "DIWALI10", type: "percentage", value: 10, minSpend: 999, endsOn: "2026-11-15" } },
+    });
+    expect(parseAssistantReply(answer("Code", { action: { kind: "create_discount", type: "percentage" } }))).toMatchObject({ action: null });
+  });
+
   it("rejects anything outside the protocol", () => {
     expect(parseAssistantReply("Sure! Here's the answer")).toBeUndefined();
     expect(parseAssistantReply(JSON.stringify({ type: "answer", text: "" }))).toBeUndefined();

@@ -21,6 +21,9 @@ export {
   type AssistantReply,
   type AssistantTurn,
   type Navigation,
+  type NewDiscount,
+  type NewProduct,
+  type ProductChanges,
   type ProposedAction,
 } from "./assistant.js";
 export { PROVIDER_TIMEOUT_MS, runTask, type GenerationResult } from "./generate.js";

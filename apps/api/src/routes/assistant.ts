@@ -1,10 +1,12 @@
 import type { Response, Router } from "express";
-import { ASSISTANT_TOOLS, assistantCapabilities, assistantSystem, runAssistantTurn, type AssistantMessage, type Navigation, type ProposedAction } from "@workeasy/ai";
+import { ASSISTANT_ACTIONS, ASSISTANT_TOOLS, assistantCapabilities, assistantSystem, runAssistantTurn, type AssistantMessage, type Navigation, type NewDiscount, type NewProduct, type ProductChanges, type ProposedAction } from "@workeasy/ai";
 import { storePermissions, type StorePermission } from "@workeasy/auth";
 import { aiRepo, analyticsRepo, checkoutRepo, identityRepo, inventoryRepo, moneyRepo, ordersRepo, productsRepo, reviewsRepo, rulesRepo, storesRepo } from "@workeasy/database";
 import { z } from "zod";
 import type { AppDependencies } from "../app.js";
 import { problems, sendProblem } from "../http/problem.js";
+import { ProductBodySchema } from "../contract/catalog.js";
+import { DiscountBodySchema } from "../contract/rules.js";
 import { analyticsReport } from "./engagement.js";
 import { issuesToErrors, NOT_VISIBLE, respond, sessionOf, UUID_PATTERN, type StoreAccess, type Trx } from "./support.js";
 
@@ -148,11 +150,173 @@ export interface Proposal {
   confirmLabel: string;
   danger: boolean;
   /** The existing endpoint the admin calls on confirmation. */
-  request: { method: "POST"; path: string; body: Record<string, unknown> };
+  request: { method: "POST" | "PUT"; path: string; body: Record<string, unknown> };
+  /** Where to send the member once it's done (shown as "Open <label>"); `:id` is filled from the response's product or discount. */
+  done?: { label: string; path: string; idFrom?: "product" | "discount" };
 }
 
-/** Checks a proposed action against the order as it is now; refuses what the endpoint would refuse. */
-async function verifyAction(trx: Trx, storeId: string, action: ProposedAction): Promise<{ ok: true; proposal: Proposal } | { ok: false; reason: string }> {
+type Checked = { ok: true; proposal: Proposal } | { ok: false; reason: string };
+
+/** The first validation message, as the product or offer form would show it. */
+const firstProblem = (issues: ReadonlyArray<{ message: string }>) => `That doesn't pass the store's checks: ${issues[0]?.message ?? "something is missing"}.`;
+const toMinor = (major: number) => Math.round(major * 100);
+
+/** Checks a proposed action against the store as it is now; refuses what the endpoint would refuse. */
+async function verifyAction(trx: Trx, storeId: string, action: ProposedAction): Promise<Checked> {
+  const store = (await storesRepo.getStore(trx))!;
+  const money = (minor: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: store.currency }).format(minor / 100);
+  if (action.kind === "create_product") return verifyNewProduct(storeId, action.product, money);
+  if (action.kind === "update_product") return verifyProductChange(trx, storeId, action.productId, action.changes, money);
+  if (action.kind === "create_discount") return verifyNewDiscount(storeId, action.discount, money);
+  return verifyOrderAction(trx, storeId, action);
+}
+
+function verifyNewProduct(storeId: string, p: NewProduct, money: (minor: number) => string): Checked {
+  const body = {
+    type: "physical",
+    status: p.status,
+    title: p.title,
+    description: p.description,
+    tags: p.tags,
+    variants: [{ options: [], sku: p.sku, priceMinor: toMinor(p.price), compareAtMinor: p.compareAtPrice === null ? null : toMinor(p.compareAtPrice), stock: p.stock ?? 0 }],
+  };
+  const checked = ProductBodySchema.safeParse(body);
+  if (!checked.success) return { ok: false, reason: firstProblem(checked.error.issues) };
+  const summary: Array<[string, string]> = [
+    ["Title", p.title],
+    ["Price", money(toMinor(p.price))],
+    ...(p.compareAtPrice !== null ? ([["Was", money(toMinor(p.compareAtPrice))]] as Array<[string, string]>) : []),
+    ["Stock", String(p.stock ?? 0)],
+    ["Status", p.status === "active" ? "Active: on sale in your shop" : "Draft: hidden from shoppers"],
+    ...(p.sku ? ([["SKU", p.sku]] as Array<[string, string]>) : []),
+    ...(p.tags.length ? ([["Tags", p.tags.join(", ")]] as Array<[string, string]>) : []),
+    ...(p.description ? ([["Description", p.description.length > 140 ? `${p.description.slice(0, 140)}…` : p.description]] as Array<[string, string]>) : []),
+  ];
+  return {
+    ok: true,
+    proposal: {
+      kind: "create_product",
+      title: `Add product: ${p.title}`,
+      summary,
+      effect: p.status === "active" ? "Adds it to your catalogue and puts it on sale straight away. You can add photos on its page." : "Adds it to your catalogue as a draft, hidden from shoppers until you make it active. You can add photos on its page.",
+      confirmLabel: "Create product",
+      danger: false,
+      request: { method: "POST", path: `/api/v1/stores/${storeId}/products`, body },
+      done: { label: p.title, path: "/products/:id", idFrom: "product" },
+    },
+  };
+}
+
+/** The product as the update endpoint expects it, so unchanged fields stay as they are (stock: null leaves it alone). */
+function productBody(p: productsRepo.Product) {
+  return {
+    type: p.type, status: p.status, title: p.title, handle: p.handle, description: p.description, vendor: p.vendor, tags: p.tags,
+    seoTitle: p.seoTitle, seoDescription: p.seoDescription, downloadLimit: p.downloadLimit, downloadExpiryDays: p.downloadExpiryDays,
+    bookingDurationMinutes: p.bookingDurationMinutes, bookingNoticeHours: p.bookingNoticeHours, bookingCapacity: p.bookingCapacity, bookingHours: p.bookingHours,
+    taxRateBps: p.taxRateBps, options: p.options,
+    variants: p.variants.map((v) => ({ id: v.id, options: v.options, sku: v.sku, barcode: v.barcode, priceMinor: v.priceMinor, compareAtMinor: v.compareAtMinor, costMinor: v.costMinor, weightGrams: v.weightGrams, trackInventory: v.trackInventory, allowBackorder: v.allowBackorder, stock: null as number | null })),
+    mediaIds: p.mediaIds, fileIds: p.fileIds, collectionIds: p.collectionIds,
+  };
+}
+
+async function verifyProductChange(trx: Trx, storeId: string, productId: string, c: ProductChanges, money: (minor: number) => string): Promise<Checked> {
+  const p = UUID_PATTERN.test(productId) ? await productsRepo.getProduct(trx, productId) : undefined;
+  if (!p) return { ok: false, reason: "I couldn't find that product in this store. Search for it first." };
+  const body = productBody(p);
+  const rows: Array<[string, string]> = [["Product", p.title]];
+  const variantChange = c.price !== undefined || c.compareAtPrice !== undefined || c.stock !== undefined;
+  if (variantChange && p.variants.length !== 1) return { ok: false, reason: `${p.title} has ${p.variants.length} variants. Change their prices or stock on the product page.` };
+  const v = body.variants[0]!;
+  if (c.price !== undefined && toMinor(c.price) !== v.priceMinor) {
+    rows.push(["Price", `${money(v.priceMinor)} → ${money(toMinor(c.price))}`]);
+    v.priceMinor = toMinor(c.price);
+  }
+  if (c.compareAtPrice !== undefined && (c.compareAtPrice === null ? null : toMinor(c.compareAtPrice)) !== v.compareAtMinor) {
+    rows.push(["Was price", `${v.compareAtMinor === null ? "none" : money(v.compareAtMinor)} → ${c.compareAtPrice === null ? "none" : money(toMinor(c.compareAtPrice))}`]);
+    v.compareAtMinor = c.compareAtPrice === null ? null : toMinor(c.compareAtPrice);
+  }
+  if (c.stock !== undefined && c.stock !== p.variants[0]!.onHand) {
+    const variant = p.variants[0]!;
+    if (!variant.trackInventory) return { ok: false, reason: `${p.title} doesn't track stock. Turn on stock tracking on the product page first.` };
+    rows.push(["Stock on hand", `${variant.onHand} → ${c.stock}`]);
+    v.stock = c.stock;
+  }
+  if (c.status !== undefined && c.status !== p.status) {
+    rows.push(["Status", `${p.status} → ${c.status}`]);
+    body.status = c.status;
+  }
+  if (c.title !== undefined && c.title !== p.title) {
+    rows.push(["Title", `${p.title} → ${c.title}`]);
+    body.title = c.title;
+  }
+  if (c.description !== undefined && c.description !== p.description) {
+    rows.push(["Description", c.description ? (c.description.length > 120 ? `${c.description.slice(0, 120)}…` : c.description) : "(removed)"]);
+    body.description = c.description;
+  }
+  if (c.addTags?.length) {
+    const added = c.addTags.map((t) => t.toLowerCase()).filter((t) => !p.tags.includes(t));
+    if (added.length) {
+      rows.push(["Add tags", added.join(", ")]);
+      body.tags = [...p.tags, ...added];
+    }
+  }
+  if (rows.length === 1) return { ok: false, reason: `${p.title} already looks like that: there's nothing to change.` };
+  const checked = ProductBodySchema.safeParse(body);
+  if (!checked.success) return { ok: false, reason: firstProblem(checked.error.issues) };
+  return {
+    ok: true,
+    proposal: {
+      kind: "update_product",
+      title: `Update ${p.title}`,
+      summary: rows,
+      effect: c.status === "archived" ? "Saves these changes. Archived products disappear from your shop." : "Saves these changes. Everything else about the product stays as it is.",
+      confirmLabel: "Save changes",
+      danger: c.status === "archived",
+      request: { method: "PUT", path: `/api/v1/stores/${storeId}/products/${p.id}`, body },
+      done: { label: body.title, path: `/products/${p.id}` },
+    },
+  };
+}
+
+function verifyNewDiscount(storeId: string, d: NewDiscount, money: (minor: number) => string): Checked {
+  const off = d.type === "percentage" ? `${d.value}% off` : d.type === "fixed" ? `${money(toMinor(d.value))} off` : "Free shipping";
+  const body = {
+    method: d.code ? "code" : "automatic",
+    code: d.code,
+    title: d.title ?? (d.code ? `${d.code}: ${off}` : off),
+    type: d.type,
+    value: d.type === "percentage" ? Math.round(d.value * 100) : d.type === "fixed" ? toMinor(d.value) : 0,
+    minSubtotalMinor: d.minSpend === null ? null : toMinor(d.minSpend),
+    endsAt: d.endsOn ? `${d.endsOn}T23:59:59.000Z` : null,
+    usageLimit: d.usageLimit,
+    oncePerCustomer: d.oncePerCustomer,
+  };
+  const checked = DiscountBodySchema.safeParse(body);
+  if (!checked.success) return { ok: false, reason: firstProblem(checked.error.issues) };
+  const summary: Array<[string, string]> = [
+    ["How", d.code ? `Code ${checked.data.code}, typed at checkout` : "Automatic, for every eligible cart"],
+    ["Discount", off],
+    ["Minimum spend", d.minSpend === null ? "None" : money(toMinor(d.minSpend))],
+    ["Ends", d.endsOn ?? "No end date"],
+    ...(d.usageLimit ? ([["Usage limit", `${d.usageLimit} uses`]] as Array<[string, string]>) : []),
+    ...(d.oncePerCustomer ? ([["Once per customer", "Yes"]] as Array<[string, string]>) : []),
+  ];
+  return {
+    ok: true,
+    proposal: {
+      kind: "create_discount",
+      title: d.code ? `Create code ${checked.data.code}` : `Create offer: ${off}`,
+      summary,
+      effect: "Starts working straight away for the whole store. You can pause or edit it under Offers.",
+      confirmLabel: "Create offer",
+      danger: false,
+      request: { method: "POST", path: `/api/v1/stores/${storeId}/discounts`, body },
+      done: { label: "Offers", path: "/offers" },
+    },
+  };
+}
+
+async function verifyOrderAction(trx: Trx, storeId: string, action: Extract<ProposedAction, { orderNumber: number }>): Promise<Checked> {
   const id = await orderByNumber(trx, action.orderNumber);
   if (!id) return { ok: false, reason: `There's no order #${action.orderNumber} in this store.` };
   const { order: o, items } = (await ordersRepo.getOrder(trx, id))!;
@@ -278,7 +442,8 @@ export function assistantRoutes(router: Router, deps: AppDependencies, access: S
       let note: string | null = null;
       const action = turn.answer.action;
       if (action) {
-        if (!current.has("orders.manage")) note = "Your role can't make this change. Ask a store owner or admin.";
+        const needs = ASSISTANT_ACTIONS.find((a) => a.kind === action.kind)?.permission ?? [];
+        if (!needs.some((p) => current.has(p as StorePermission))) note = "Your role can't make this change. Ask a store owner or admin.";
         else {
           const checked = await verifyAction(trx, storeId, action);
           if (checked.ok) proposal = checked.proposal;

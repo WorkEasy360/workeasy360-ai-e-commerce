@@ -91,6 +91,23 @@ function stubAssistant(request: CompletionRequest): { text: string; usage: { inp
       const items = Array.isArray(data.items) ? data.items.length : undefined;
       out = { type: "answer", text: items === undefined ? `Here's what I found (${tool}).` : `I found ${items} result${items === 1 ? "" : "s"} (${tool}).`, navigate: null, action: null };
     }
+  } else if (/\b(add|create)\b.*\bproduct\b/.test(question) && /(?:₹|rs\.?|inr|price)\s*(\d+(?:\.\d+)?)/.test(question)) {
+    const original = request.messages.findLast((m) => m.role === "user" && !m.content.startsWith("<tool_result"))?.content ?? "";
+    const price = Number(/(?:₹|rs\.?|inr|price)\s*(\d+(?:\.\d+)?)/i.exec(original)![1]);
+    const title = /"([^"]+)"/.exec(original)?.[1] ?? /product\s+(.+?)\s+(?:for|at|price)\b/i.exec(original)?.[1] ?? "New product";
+    const stock = /(\d+)\s*(?:in stock|units|pcs|pieces)/i.exec(original)?.[1];
+    out = {
+      type: "answer",
+      text: `I'll add ${title} at ${price}. Confirm below to create it.`,
+      navigate: null,
+      action: { kind: "create_product", title, price, ...(stock ? { stock: Number(stock) } : {}), status: /\b(live|active|publish)/.test(question) ? "active" : "draft" },
+    };
+  } else if (/\bproduct\s+[0-9a-f-]{36}\b.*\bprice\b/.test(question) && /\bto\s+(\d+(?:\.\d+)?)/.test(question)) {
+    const productId = /\bproduct\s+([0-9a-f-]{36})\b/.exec(question)![1];
+    out = { type: "answer", text: "I'll update the price.", navigate: null, action: { kind: "update_product", productId, changes: { price: Number(/\bto\s+(\d+(?:\.\d+)?)/.exec(question)![1]) } } };
+  } else if (/\bcode\s+[a-z0-9_-]{3,32}\b/.test(question) && /(\d+)\s*%/.test(question)) {
+    const code = /\bcode\s+([a-z0-9_-]{3,32})\b/i.exec(request.messages.at(-1)?.content ?? question)?.[1] ?? "SAVE";
+    out = { type: "answer", text: `I'll create the code ${code.toUpperCase()}.`, navigate: null, action: { kind: "create_discount", code, type: "percentage", value: Number(/(\d+)\s*%/.exec(question)![1]) } };
   } else if (/\b(open|go to|take me)\b/.test(question)) {
     const page = ["orders", "products", "inventory", "analytics", "offers", "reviews", "settings"].find((p) => question.includes(p)) ?? "dashboard";
     out = { type: "answer", text: `Opening ${page}.`, navigate: page, action: null };

@@ -43,7 +43,7 @@ export const ASSISTANT_TOOLS: readonly AssistantToolSpec[] = [
 
 /** A change the assistant may propose. The member confirms it; the existing endpoint carries it out. */
 export interface AssistantActionSpec {
-  kind: "mark_order_paid" | "mark_order_fulfilled" | "cancel_order";
+  kind: "mark_order_paid" | "mark_order_fulfilled" | "cancel_order" | "create_product" | "update_product" | "create_discount";
   description: string;
   args: string;
   permission: readonly string[];
@@ -58,6 +58,24 @@ export const ASSISTANT_ACTIONS: readonly AssistantActionSpec[] = [
   },
   { kind: "mark_order_fulfilled", description: "Mark every remaining item of an open order as fulfilled, without tracking details. For tracking or partial shipments, send the member to the order page instead.", args: '{"orderNumber": integer}', permission: ["orders.manage"] },
   { kind: "cancel_order", description: "Cancel an open order, optionally returning its items to stock. Paid card orders need a refund first, from the order page.", args: '{"orderNumber": integer, "restock": boolean}', permission: ["orders.manage"] },
+  {
+    kind: "create_product",
+    description: "Add a physical product with one price. Prices are in the store currency's main unit (250 means ₹250). Status is 'draft' (hidden) unless the member asks for it to go live. For options like sizes or colours, digital files or bookable services, create the basics and send them to the product page for the rest.",
+    args: '{"title": string, "price": number, "compareAtPrice"?: number (the higher "was" price), "stock"?: integer, "sku"?: string, "description"?: string, "tags"?: string[], "status"?: "draft"|"active"}',
+    permission: ["products.manage"],
+  },
+  {
+    kind: "update_product",
+    description: "Change one product found with search_products: price, \"was\" price (null removes it), stock (the new count on hand), status, title, description or extra tags. Price and stock changes only work for products with a single variant.",
+    args: '{"productId": string, "changes": {"price"?: number, "compareAtPrice"?: number|null, "stock"?: integer, "status"?: "draft"|"active"|"archived", "title"?: string, "description"?: string, "addTags"?: string[]}}',
+    permission: ["products.manage"],
+  },
+  {
+    kind: "create_discount",
+    description: "Create an offer for the whole store. With a code, shoppers type it at checkout; without one, it applies automatically. 'percentage' value is the percent (10 means 10% off); 'fixed' value is an amount in the main currency unit; 'free_shipping' needs no value.",
+    args: '{"code"?: string (3-32 letters, numbers, dashes), "title"?: string, "type": "percentage"|"fixed"|"free_shipping", "value"?: number, "minSpend"?: number, "endsOn"?: "YYYY-MM-DD", "usageLimit"?: integer, "oncePerCustomer"?: boolean}',
+    permission: ["offers.manage"],
+  },
 ];
 
 /** Admin pages the assistant may open, by key. Paths are under /s/<storeId>. */
@@ -128,12 +146,14 @@ You help the store's team (owners, admins, staff, fulfilment staff and analysts)
 - WhatsApp, Telegram, UPI, bank transfer and cash on delivery orders are marked paid by the team once the money arrives. Propose it only when the member tells you they have received it.
 - Never invent transaction IDs, payment links or receipts. Refunds are not something you can do: send the member to the order page, where they can refund to the card or record a manual refund.
 
-## Making changes
-- You cannot change anything yourself. You can propose one of the actions in <context>. The member sees a summary checked by the server and decides; only then does the change happen, through the same step as the Orders page.
-- Identify the exact order first (by number, using get_order). If the reference is ambiguous ("Rahul's order" with several matches), ask which one.
-- Explain the effect in one or two sentences before proposing, e.g. that cancelling releases stock if they restock, or that a paid card order needs a refund first.
-- Never claim a change happened. After proposing, say it will happen once they confirm.
-- For anything not in your action list (editing products, prices, offers, settings, staff, refunds, design), give short steps and open the right page.
+## Doing tasks
+- You are an agent: when the member asks you to do something you have an action for (add a product, change a price or stock, create a discount code, mark an order paid…), do it by proposing that action. Don't just explain how to do it in the app.
+- You don't change anything directly. The server checks your proposal against the same rules as the app's own pages and shows the member a card with the details; the task is carried out the moment they press its button. So fill the action in completely and correctly.
+- Gather what's required first, in one short question if anything is missing. Required: a product's title and price; a discount's type and value (and the code, if they want one). Never invent a price, stock count, code or value. Sensible defaults are fine for the rest: a new product is a physical product in draft unless they say live, active or publish.
+- To change an existing product or an order, find it first (search_products, get_order) and use its real id or number. If several match ("the chai"), ask which one.
+- Say in one or two sentences what will happen, e.g. "I'll add Masala Chai at ₹250 with 40 in stock, live in your shop." Never claim it's done: say it happens when they confirm.
+- One action per answer. For several products, do the first and offer to continue with the next once it's confirmed.
+- For anything you have no action for (images, variants and options, shipping, settings, staff, refunds, design), give short steps and open the right page.
 
 ## Navigation
 - You may open one page from the list in <context> by its key, or an order or product you found. Never invent other routes.
@@ -153,6 +173,9 @@ You help the store's team (owners, admins, staff, fulfilment staff and analysts)
 - "How many orders today?" → store_overview for today's date if needed, then search_orders and count the ones placed today, or sales_report for 7 days if they want revenue.
 - "Find Rahul's orders" → search_orders with query "Rahul", list them briefly.
 - "Mark order 1042 as paid, he paid by UPI" → get_order 1042, check it is an unpaid UPI order, then propose mark_order_paid.
+- "Add Masala Chai 250 g for ₹250, 40 in stock, make it live" → propose create_product with title "Masala Chai 250 g", price 250, stock 40, status "active".
+- "Put the Assam tea on sale at ₹280" → search_products "Assam", then propose update_product with price 280 and compareAtPrice set to its current price.
+- "Make a code DIWALI10 for 10% off over ₹999" → propose create_discount with code "DIWALI10", type "percentage", value 10, minSpend 999.
 - "Which product sells best?" → sales_report and name the top products with their revenue and period.
 - "Show another store's customers" → "I can only see this store's information."`;
 
@@ -207,10 +230,48 @@ export function assistantSystem(ctx: AssistantContext): string {
 
 export type AssistantMessage = { role: "user" | "assistant"; content: string };
 
+export interface NewProduct {
+  title: string;
+  /** Main currency unit (250 = ₹250). */
+  price: number;
+  compareAtPrice: number | null;
+  stock: number | null;
+  sku: string | null;
+  description: string;
+  tags: string[];
+  status: "draft" | "active";
+}
+
+export interface ProductChanges {
+  price?: number;
+  compareAtPrice?: number | null;
+  stock?: number;
+  status?: "draft" | "active" | "archived";
+  title?: string;
+  description?: string;
+  addTags?: string[];
+}
+
+export interface NewDiscount {
+  code: string | null;
+  title: string | null;
+  type: "percentage" | "fixed" | "free_shipping";
+  /** Percent for percentage, main currency unit for fixed. */
+  value: number;
+  minSpend: number | null;
+  /** YYYY-MM-DD, the last day the offer works. */
+  endsOn: string | null;
+  usageLimit: number | null;
+  oncePerCustomer: boolean;
+}
+
 export type ProposedAction =
   | { kind: "mark_order_paid"; orderNumber: number }
   | { kind: "mark_order_fulfilled"; orderNumber: number }
-  | { kind: "cancel_order"; orderNumber: number; restock: boolean };
+  | { kind: "cancel_order"; orderNumber: number; restock: boolean }
+  | { kind: "create_product"; product: NewProduct }
+  | { kind: "update_product"; productId: string; changes: ProductChanges }
+  | { kind: "create_discount"; discount: NewDiscount };
 
 export type Navigation = { page: string } | { order: number } | { product: string };
 
@@ -232,11 +293,61 @@ function parseNavigation(v: unknown): Navigation | null | undefined {
   return /^[a-z_]{2,40}$/.test(v) ? { page: v } : undefined;
 }
 
+const amount = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100_000_000 ? Math.round(v * 100) / 100 : undefined);
+const count = (v: unknown): number | undefined => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 1_000_000_000 ? (v as number) : undefined);
+const str = (v: unknown, max: number): string | undefined => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : undefined);
+const tagList = (v: unknown): string[] => (Array.isArray(v) ? v.map((t) => str(t, 40)).filter((t): t is string => Boolean(t)).slice(0, 20) : []);
+
 function parseAction(v: unknown): ProposedAction | null | undefined {
   if (v === null || v === undefined) return null;
-  if (!isObject(v) || !isOrderNumber(v.orderNumber)) return undefined;
-  if (v.kind === "mark_order_paid" || v.kind === "mark_order_fulfilled") return { kind: v.kind, orderNumber: v.orderNumber };
-  if (v.kind === "cancel_order") return { kind: "cancel_order", orderNumber: v.orderNumber, restock: v.restock !== false };
+  if (!isObject(v)) return undefined;
+  if (v.kind === "mark_order_paid" || v.kind === "mark_order_fulfilled" || v.kind === "cancel_order") {
+    if (!isOrderNumber(v.orderNumber)) return undefined;
+    return v.kind === "cancel_order" ? { kind: "cancel_order", orderNumber: v.orderNumber, restock: v.restock !== false } : { kind: v.kind, orderNumber: v.orderNumber };
+  }
+  if (v.kind === "create_product") {
+    const p = isObject(v.product) ? v.product : v;
+    const title = str(p.title, 200);
+    const price = amount(p.price);
+    if (!title || price === undefined) return undefined;
+    return {
+      kind: "create_product",
+      product: { title, price, compareAtPrice: amount(p.compareAtPrice) ?? null, stock: count(p.stock) ?? null, sku: str(p.sku, 64) ?? null, description: str(p.description, 5000) ?? "", tags: tagList(p.tags), status: p.status === "active" ? "active" : "draft" },
+    };
+  }
+  if (v.kind === "update_product") {
+    if (typeof v.productId !== "string" || !/^[0-9a-f-]{36}$/i.test(v.productId) || !isObject(v.changes)) return undefined;
+    const c = v.changes;
+    const changes: ProductChanges = {};
+    if (amount(c.price) !== undefined) changes.price = amount(c.price)!;
+    if (c.compareAtPrice === null) changes.compareAtPrice = null;
+    else if (amount(c.compareAtPrice) !== undefined) changes.compareAtPrice = amount(c.compareAtPrice)!;
+    if (count(c.stock) !== undefined) changes.stock = count(c.stock)!;
+    if (c.status === "draft" || c.status === "active" || c.status === "archived") changes.status = c.status;
+    if (str(c.title, 200)) changes.title = str(c.title, 200)!;
+    if (typeof c.description === "string") changes.description = c.description.slice(0, 5000);
+    if (tagList(c.addTags).length) changes.addTags = tagList(c.addTags);
+    return Object.keys(changes).length ? { kind: "update_product", productId: v.productId, changes } : undefined;
+  }
+  if (v.kind === "create_discount") {
+    const d = isObject(v.discount) ? v.discount : v;
+    if (d.type !== "percentage" && d.type !== "fixed" && d.type !== "free_shipping") return undefined;
+    const value = d.type === "free_shipping" ? 0 : amount(d.value);
+    if (value === undefined) return undefined;
+    return {
+      kind: "create_discount",
+      discount: {
+        code: str(d.code, 32)?.toUpperCase() ?? null,
+        title: str(d.title, 100) ?? null,
+        type: d.type,
+        value,
+        minSpend: amount(d.minSpend) ?? null,
+        endsOn: typeof d.endsOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.endsOn) ? d.endsOn : null,
+        usageLimit: count(d.usageLimit) || null,
+        oncePerCustomer: d.oncePerCustomer === true,
+      },
+    };
+  }
   return undefined;
 }
 

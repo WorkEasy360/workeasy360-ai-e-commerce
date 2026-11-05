@@ -52,8 +52,13 @@ Its rules carry over unchanged: store isolation first, real data over guesses, c
 | `mark_order_paid` | Open order, payment pending, paid by WhatsApp, Telegram, UPI, bank transfer or cash on delivery. **Never card orders:** only the gateway confirms those | `POST …/orders/:id/paid` |
 | `mark_order_fulfilled` | Open order with items left to fulfil | `POST …/orders/:id/fulfilled` |
 | `cancel_order` | Open order. A paid card order must be refunded first | `POST …/orders/:id/cancel` |
+| `create_product` | Title and price given. Physical, one price, optional "was" price, stock, SKU, tags and description. Stays a draft unless the member asks for it live. Checked with the same rules as the product form | `POST …/products` |
+| `update_product` | A product found by search. Can change price, "was" price, stock, status, title, description or add tags. Every other field is sent back unchanged. Price and stock only for single-variant products, and unchanged values are skipped | `PUT …/products/:id` |
+| `create_discount` | Percentage, fixed amount or free shipping, with or without a code. Optional minimum spend, end date, usage limit and once per customer. Checked with the same rules as the Offers form | `POST …/discounts` |
 
-Everything else, such as refunds, editing products, prices, offers, settings, staff and design, is left to the pages. The assistant explains the steps and links to the page.
+The assistant works as an agent. When you ask for one of these tasks, it gathers what's missing (it never invents a price, code or value) and prepares the action. The card shows the details exactly as they'll be saved, and one click carries the task out. The reply then links to the result, such as the new product or Offers.
+
+Some things need a page: product photos, variants and options, digital files, bookable services, shipping, settings, staff, refunds and design. For those, the assistant explains the steps and links to the right page.
 
 ## Safety
 

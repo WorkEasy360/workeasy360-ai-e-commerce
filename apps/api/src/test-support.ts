@@ -21,7 +21,7 @@ export const testSettings: AppSettings = {
   secureCookies: false,
   aiProvider: "stub",
   aiDailyLimit: 5,
-  assistantDailyLimit: 6,
+  assistantDailyLimit: 20,
 };
 
 /**

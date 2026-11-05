@@ -11,7 +11,9 @@ interface Proposal {
   effect: string;
   confirmLabel: string;
   danger: boolean;
-  request: { method: "POST"; path: string; body: Record<string, unknown> };
+  request: { method: "POST" | "PUT"; path: string; body: Record<string, unknown> };
+  /** Where the result lives once it's done; `:id` comes from the response. */
+  done?: { label: string; path: string; idFrom?: "product" | "discount" };
 }
 
 interface Message {
@@ -22,7 +24,7 @@ interface Message {
   /** Why a requested change can't be offered (wrong state, role…). */
   note?: string | null;
   /** What happened to the proposal: confirmed (with the server's answer), declined or failed. */
-  outcome?: { kind: "done" | "declined" | "failed"; text: string };
+  outcome?: { kind: "done" | "declined" | "failed"; text: string; link?: { label: string; href: string } };
   error?: boolean;
 }
 
@@ -137,15 +139,18 @@ export function AssistantPanel({ storeId, can, userName }: { storeId: string; ca
     setBusy(true);
     let outcome: Message["outcome"];
     try {
-      await api(m.proposal.request.path, { method: m.proposal.request.method, body: m.proposal.request.body });
-      outcome = { kind: "done", text: `Done: ${m.proposal.title.charAt(0).toLowerCase()}${m.proposal.title.slice(1)}.` };
+      const result = await api<Partial<Record<"product" | "discount", { id?: string }>>>(m.proposal.request.path, { method: m.proposal.request.method, body: m.proposal.request.body });
+      const done = m.proposal.done;
+      const id = done?.idFrom ? result[done.idFrom]?.id : undefined;
+      const link = done && (!done.idFrom || id) ? { label: done.label, href: `/s/${storeId}${done.path.replace(":id", id ?? "")}` } : undefined;
+      outcome = { kind: "done", text: `Done: ${m.proposal.title.charAt(0).toLowerCase()}${m.proposal.title.slice(1)}.`, ...(link ? { link } : {}) };
     } catch (err) {
       outcome = { kind: "failed", text: `Not done: ${errorMessage(err)}` };
     } finally {
       setBusy(false);
     }
     // Recorded as a message too, so the assistant knows what happened next time.
-    update([...messages.map((x, i) => (i === index ? { ...x, outcome } : x)), { role: "assistant", content: outcome.text }]);
+    update([...messages.map((x, i) => (i === index ? { ...x, outcome } : x)), { role: "assistant", content: outcome.text, link: outcome.link ?? null }]);
   }
 
   function submit(e: FormEvent) {

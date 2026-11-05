@@ -104,6 +104,46 @@ describe("assistant", () => {
     expect(r.body.answer.note).toMatch(/role can't make this change/);
   });
 
+  it("adds a product only once the member confirms, through the products endpoint", async () => {
+    const r = await ask(owner, 'Add product "Ginger Tea 100 g" for ₹180, 25 in stock, make it live');
+    const p = r.body.answer.proposal;
+    expect(p).toMatchObject({ kind: "create_product", request: { method: "POST", path: `${admin()}/products` }, done: { path: "/products/:id", idFrom: "product" } });
+    expect(p.summary).toEqual(expect.arrayContaining([["Price", "₹180.00"], ["Stock", "25"], ["Status", "Active: on sale in your shop"]]));
+    expect((await as(owner, "get", `${admin()}/products?q=Ginger`)).body.items).toHaveLength(0);
+    const made = await as(owner, "post", p.request.path).send(p.request.body);
+    expect(made.status).toBe(201);
+    expect(made.body.product).toMatchObject({ title: "Ginger Tea 100 g", status: "active", type: "physical" });
+    expect(made.body.product.variants[0]).toMatchObject({ priceMinor: 18000, onHand: 25 });
+
+    // A price change keeps everything else, stock included.
+    const id = made.body.product.id as string;
+    const change = await ask(owner, `Set product ${id} price to 150`);
+    const u = change.body.answer.proposal;
+    expect(u).toMatchObject({ kind: "update_product", request: { method: "PUT", path: `${admin()}/products/${id}` } });
+    expect(u.summary).toContainEqual(["Price", "₹180.00 → ₹150.00"]);
+    const saved = await as(owner, "put", u.request.path).send(u.request.body);
+    expect(saved.status).toBe(200);
+    expect(saved.body.product).toMatchObject({ title: "Ginger Tea 100 g", status: "active" });
+    expect(saved.body.product.variants[0]).toMatchObject({ priceMinor: 15000, onHand: 25 });
+    // The same change again has nothing left to do.
+    expect((await ask(owner, `Set product ${id} price to 150`)).body.answer.note).toMatch(/nothing to change/);
+  });
+
+  it("creates a discount code through the offers endpoint", async () => {
+    const r = await ask(owner, "Create code CHAI10 for 10% off");
+    const p = r.body.answer.proposal;
+    expect(p).toMatchObject({ kind: "create_discount", title: "Create code CHAI10", request: { method: "POST", path: `${admin()}/discounts` } });
+    expect((await as(owner, "post", p.request.path).send(p.request.body)).status).toBe(201);
+    const offers = (await as(owner, "get", `${admin()}/discounts`)).body.items as Array<{ code: string; type: string; value: number }>;
+    expect(offers).toContainEqual(expect.objectContaining({ code: "CHAI10", type: "percentage", value: 1000 }));
+  });
+
+  it("refuses product tasks to roles without them", async () => {
+    const r = await ask(analyst, 'Add product "Secret Blend" for ₹99');
+    expect(r.body.answer.proposal).toBeNull();
+    expect(r.body.answer.note).toMatch(/role can't make this change/);
+  });
+
   it("keeps other stores' members out", async () => {
     const r = await ask(outsider, "Which orders are waiting for payment?");
     expect(r.status).toBe(404);
