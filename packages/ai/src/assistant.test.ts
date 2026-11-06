@@ -50,6 +50,13 @@ describe("replies", () => {
     expect(parseAssistantReply(answer("Code", { action: { kind: "create_discount", type: "percentage" } }))).toMatchObject({ action: null });
   });
 
+  it("strips markdown the chat can't show", () => {
+    expect(parseAssistantReply(answer("## Steps\n1. Go to **Products** and click `Add product`.\n* Then __Save product__."))).toMatchObject({
+      text: "Steps\n1. Go to Products and click Add product.\n- Then Save product.",
+    });
+    expect(parseAssistantReply(answer("Price is 2 * 3 = 6"))).toMatchObject({ text: "Price is 2 * 3 = 6" });
+  });
+
   it("rejects anything outside the protocol", () => {
     expect(parseAssistantReply("Sure! Here's the answer")).toBeUndefined();
     expect(parseAssistantReply(JSON.stringify({ type: "answer", text: "" }))).toBeUndefined();
