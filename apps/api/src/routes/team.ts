@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Router } from "express";
 import { canAssignRole, isStoreRole, type StoreRole } from "@workeasy/auth";
-import { auditRepo, membersRepo, storesRepo, withContext, withStore, type Invitation } from "@workeasy/database";
+import { auditRepo, membersRepo, storesRepo, withContext, withStore, workeasy360Repo, type Invitation } from "@workeasy/database";
 import { z } from "zod";
 import type { AppDependencies } from "../app.js";
 import { problems, sendProblem } from "../http/problem.js";
@@ -151,7 +151,12 @@ export function teamRoutes(router: Router, { db, settings, resolveTxt }: AppDepe
     const hash = hashToken(req.params.token);
     const storeId = await membersRepo.resolveInvitation(db, hash);
     if (!storeId) return sendProblem(res, 404, "INVITATION_INVALID", "This invitation link has expired, was revoked or was already used");
-    const userId = sessionOf(res).userId;
+    const session = sessionOf(res);
+    if (session.provider === "workeasy360" && (await workeasy360Repo.storeOrganization(db, storeId)) !== session.workeasy360OrganizationId) {
+      // Joining another organization's store would give this session nothing: its token named one organization.
+      return sendProblem(res, 403, "WORKEASY360_OTHER_ORGANIZATION", "This invitation is for a store of another organization. Open it from that organization in WorkEasy360");
+    }
+    const userId = session.userId;
     const joined = await withContext(db, { storeId, userId }, async (trx) => {
       const accepted = await membersRepo.markInvitationAccepted(trx, hash, userId);
       if (!accepted) return undefined;

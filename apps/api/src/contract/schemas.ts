@@ -87,6 +87,8 @@ export const MeResponseSchema = z.object({
   stores: z.array(z.object({ id: Uuid, name: z.string(), slug: z.string(), role: Role, permissions: Permissions })),
   /** Public origin of the storefront (shops at <origin>/s/<slug>), from the server's settings at runtime. */
   storefrontOrigin: z.url(),
+  /** How this session was opened. A WorkEasy360 session sees only its organization's stores and may also sign out of WorkEasy360. */
+  session: z.object({ provider: z.enum(["local", "workeasy360"]), workeasy360SignOut: z.boolean() }),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 

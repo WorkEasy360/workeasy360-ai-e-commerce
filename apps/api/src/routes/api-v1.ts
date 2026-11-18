@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { storePermissions } from "@workeasy/auth";
-import { auditRepo, identityRepo, membersRepo, storesRepo, withContext, type StoreRecord } from "@workeasy/database";
+import { auditRepo, identityRepo, membersRepo, storesRepo, withContext, workeasy360Repo, type StoreRecord } from "@workeasy/database";
 import type { AppDependencies } from "../app.js";
 import {
   AuditQuerySchema,
@@ -20,6 +20,7 @@ import { problems, sendProblem } from "../http/problem.js";
 import { requestIdOf } from "../http/request-context.js";
 import { requireSameOrigin } from "../http/same-origin.js";
 import { sessionCookieName } from "./auth.js";
+import { refuseUnlessWorkeasy360, storeGate } from "../workeasy360/access.js";
 import { collectionsRoutes } from "./collections.js";
 import { inventoryRoutes } from "./inventory.js";
 import { mediaRoutes } from "./media.js";
@@ -72,17 +73,22 @@ export function apiV1Router(deps: AppDependencies): Router {
       problems.unauthenticated(res);
       return;
     }
+    if (refuseUnlessWorkeasy360(deps.workeasy360, session, res)) return;
     res.locals.session = session;
     next();
   });
 
   router.use(requireSameOrigin(settings.adminOrigin));
+  // WorkEasy360: a session reaches only its organization's stores, and only while it is entitled.
+  router.use("/stores/:storeId", storeGate(db, deps.workeasy360));
 
   const access = storeAccess(db);
   const { inStore, withPermission } = access;
 
   router.get("/me", async (_req, res) => {
-    const profile = await identityRepo.getUserProfile(db, sessionOf(res).userId);
+    const session = sessionOf(res);
+    // A WorkEasy360 session sees only the stores of the organization its token named.
+    const profile = await identityRepo.getUserProfile(db, session.userId, session.provider === "workeasy360" ? session.workeasy360OrganizationId : undefined);
     if (!profile) {
       problems.unauthenticated(res);
       return;
@@ -97,6 +103,7 @@ export function apiV1Router(deps: AppDependencies): Router {
         permissions: permissionList(m),
       })),
       storefrontOrigin: settings.storefrontOrigin,
+      session: { provider: session.provider, workeasy360SignOut: session.provider === "workeasy360" },
     };
     res.json(body);
   });
@@ -120,7 +127,18 @@ export function apiV1Router(deps: AppDependencies): Router {
       problems.validation(res, issuesToErrors(body.error));
       return;
     }
-    const userId = sessionOf(res).userId;
+    const session = sessionOf(res);
+    const userId = session.userId;
+    const organizationId = session.provider === "workeasy360" ? session.workeasy360OrganizationId : undefined;
+    if (session.provider === "workeasy360") {
+      // A store of a WorkEasy360 organization: its first, created by whoever arrives first, or another one, by an owner of one.
+      const stores = await workeasy360Repo.organizationStores(db, organizationId ?? "");
+      const ownsOne = stores.length > 0 && (await identityRepo.getUserProfile(db, userId, organizationId))?.memberships.some((m) => m.role === "owner");
+      if (!deps.workeasy360?.settings.provisionStores || (stores.length > 0 && !ownsOne)) {
+        sendProblem(res, 403, "WORKEASY360_STORES", "Only an owner of one of your organization's stores can add another");
+        return;
+      }
+    }
     const profile = await identityRepo.getUserProfile(db, userId);
     if (!profile) {
       problems.unauthenticated(res);
@@ -146,6 +164,7 @@ export function apiV1Router(deps: AppDependencies): Router {
           contactEmail: input.contactEmail ?? null,
           homeRegion: settings.homeRegion ?? "default",
           ownerId: userId,
+          workeasy360OrganizationId: organizationId,
         });
         await auditRepo.appendAudit(trx, {
           storeId,
