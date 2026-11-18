@@ -6,7 +6,7 @@ export default async function HomePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { signin, returnTo, new: createNew } = await searchParams;
+  const { signin, returnTo, new: createNew, sso_error: ssoError, reason } = await searchParams;
   // Only invitation links may be returned to after signing in.
   const safeReturnTo = typeof returnTo === "string" && /^\/invite\/[A-Za-z0-9_-]{20,200}$/.test(returnTo) ? returnTo : undefined;
   return (
@@ -19,7 +19,13 @@ export default async function HomePage({
             <small>AI Commerce</small>
           </span>
         </div>
-        <SessionPanel signInFailed={signin === "failed"} createNew={createNew === "1"} {...(safeReturnTo ? { returnTo: safeReturnTo } : {})} />
+        <SessionPanel
+          signInFailed={signin === "failed"}
+          createNew={createNew === "1"}
+          {...(safeReturnTo ? { returnTo: safeReturnTo } : {})}
+          {...(typeof ssoError === "string" && /^[a-z_]{1,40}$/.test(ssoError) ? { ssoError } : {})}
+          {...(typeof reason === "string" && /^[a-z_]{1,40}$/.test(reason) ? { reason } : {})}
+        />
       </div>
     </main>
   );
