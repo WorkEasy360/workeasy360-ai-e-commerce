@@ -88,7 +88,11 @@ Until the real domain is ready, the app uses sslip.io names, which resolve to th
 Caddy gets real Let's Encrypt certificates for both.
 
 To move to the real domain:
-1. Add A records, e.g. `admin.workeasy360.com` and `shop.workeasy360.com`, pointing at the Elastic IP.
+1. Add A records for the admin and storefront hostnames, pointing at the Elastic IP.
+
+   > **Do not use `admin.workeasy360.com`.** That hostname is already WorkEasy360's Super Admin portal, so this plan collides with it. Choose another admin hostname, for example `commerce-admin.workeasy360.com`, and agree it with the platform team. No DNS has been changed for this.
+   >
+   > WorkEasy360 sign-in also needs the admin hostname proven with a DNS TXT record ([workeasy360-sso.md](workeasy360-sso.md)), and `sslip.io` names cannot carry one.
 2. Update the four address lines in the secret.
 3. Update the quarantine bucket's CORS and the `DOMAIN` variable.
 4. Redeploy.

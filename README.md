@@ -70,6 +70,8 @@ pnpm check:budgets --store <slug>          # page JavaScript budgets; needs prod
 
 Deployment to AWS (EC2, the shared Aurora cluster, S3, SES, GitHub Actions) is described in [docs/deployment.md](docs/deployment.md).
 
+Signing merchants in with WorkEasy360 Accounts (registration, environment, operator commands, the hostname prerequisite) is described in [docs/workeasy360-sso.md](docs/workeasy360-sso.md).
+
 ## Security model (inherited from the form builder)
 
 - **Store isolation:** every merchant row carries `store_id` and is protected by forced RLS. The API sets the store only after it confirms the user has an active membership. A store the user can't access returns 404.

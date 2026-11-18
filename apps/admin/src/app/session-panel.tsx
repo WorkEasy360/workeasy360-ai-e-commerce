@@ -5,6 +5,7 @@ import { ArrowRightIcon, PlusIcon } from "@workeasy/ui/react";
 import { api, ApiError, setStorefrontOrigin, type Me } from "../lib/api";
 import { CreateStore } from "./create-store";
 import { SignIn } from "./sign-in";
+import { NoAccess, SignOutButtons } from "./workeasy360";
 
 type State = { kind: "loading" } | { kind: "signed-out" } | { kind: "error" } | { kind: "signed-in"; me: Me };
 
@@ -13,7 +14,19 @@ type State = { kind: "loading" } | { kind: "signed-out" } | { kind: "error" } | 
  * Someone with exactly one store goes straight to its dashboard, unless they
  * came here to create another (`?new=1`).
  */
-export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFailed: boolean; returnTo?: string; createNew: boolean }) {
+export function SessionPanel({
+  signInFailed,
+  returnTo,
+  createNew,
+  ssoError,
+  reason,
+}: {
+  signInFailed: boolean;
+  returnTo?: string;
+  createNew: boolean;
+  ssoError?: string;
+  reason?: string;
+}) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(createNew);
 
@@ -54,7 +67,9 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
   }
 
   if (state.kind === "signed-out") {
-    return <SignIn signInFailed={signInFailed} {...(returnTo ? { returnTo } : {})} />;
+    // WorkEasy360 said this organization (or person) has no access: a purchase path, not a sign-in error.
+    if (ssoError === "not_entitled") return <NoAccess reason={reason} signedIn={false} />;
+    return <SignIn signInFailed={signInFailed} {...(returnTo ? { returnTo } : {})} {...(ssoError ? { ssoError } : {})} />;
   }
 
   const { me } = state;
@@ -68,7 +83,7 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
             Back to your stores
           </button>
         )}
-        <SignOut />
+        <SignOut workeasy360={me.session?.workeasy360SignOut ?? false} />
       </>
     );
   }
@@ -104,17 +119,15 @@ export function SessionPanel({ signInFailed, returnTo, createNew }: { signInFail
           <PlusIcon size={16} /> Create another store
         </button>
       </section>
-      <SignOut />
+      <SignOut workeasy360={me.session?.workeasy360SignOut ?? false} />
     </>
   );
 }
 
-function SignOut() {
+function SignOut({ workeasy360 }: { workeasy360: boolean }) {
   return (
-    <form method="post" action="/auth/logout" style={{ justifySelf: "center" }}>
-      <button type="submit" className="c-btn c-btn-ghost c-btn-sm">
-        Sign out
-      </button>
-    </form>
+    <div style={{ justifySelf: "center", display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <SignOutButtons workeasy360={workeasy360} />
+    </div>
   );
 }
