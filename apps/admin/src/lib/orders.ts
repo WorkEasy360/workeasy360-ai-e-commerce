@@ -19,7 +19,6 @@ export interface CheckoutSettings {
   upiId: string | null;
   upiInstructions: string | null;
   whatsappNumber: string | null;
-  telegramUsername: string | null;
   orderNoteEnabled: boolean;
 }
 

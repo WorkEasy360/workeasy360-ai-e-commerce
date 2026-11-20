@@ -14,12 +14,19 @@ import {
   SettingsIcon,
   ShippingIcon,
   SparkleIcon,
+  UsersIcon,
 } from "@workeasy/ui/react";
 
 /**
- * The fourteen admin modules, in sidebar order. The sidebar, the page
- * headers and the not-yet-built module pages all read from this one list,
- * so names, icons, permissions and descriptions never drift apart.
+ * The admin modules, in sidebar order. The sidebar, the page headers and the
+ * not-yet-built module pages all read from this one list, so names, icons,
+ * permissions and descriptions never drift apart.
+ *
+ * The sidebar follows the merchant menu in the development note (v2, section
+ * 2): Home, Orders, Catalog, Customers, Storefront, Marketing, Reports and
+ * Settings. Shipping and Payments are Settings sections, and the Media
+ * Library and AI Studio open from inside the editors, so those four keep
+ * their pages and addresses but have no sidebar entry of their own.
  */
 export type ModuleKey =
   | "dashboard"
@@ -28,16 +35,18 @@ export type ModuleKey =
   | "inventory"
   | "media"
   | "orders"
+  | "customers"
   | "offers"
   | "reviews"
   | "shipping"
   | "payments"
   | "analytics"
   | "design"
+  | "pages"
   | "ai"
   | "settings";
 
-export type ModuleGroup = "Overview" | "Catalog" | "Sales" | "Operations" | "Growth" | "Store";
+export type ModuleGroup = "Overview" | "Sales" | "Catalog" | "Storefront" | "Marketing" | "Reports" | "Store";
 
 export interface AdminModule {
   key: ModuleKey;
@@ -56,12 +65,17 @@ export interface AdminModule {
   primaryAction?: string;
   /** Build phase (docs/03-roadmap.md); undefined once it is live. */
   phase?: number;
+  /**
+   * Set for modules with no sidebar entry: the sidebar entry that shows as
+   * current on their pages instead.
+   */
+  under?: ModuleKey;
 }
 
 export const MODULES: readonly AdminModule[] = [
   {
     key: "dashboard",
-    label: "Dashboard",
+    label: "Home",
     path: "",
     group: "Overview",
     icon: (s) => <DashboardIcon size={s} />,
@@ -75,10 +89,10 @@ export const MODULES: readonly AdminModule[] = [
     group: "Catalog",
     icon: (s) => <ProductIcon size={s} />,
     permission: "products.read",
-    summary: "Physical goods, digital downloads and bookable services, with variants.",
+    summary: "Physical goods and digital downloads, with variants.",
     primaryAction: "Add product",
     features: [
-      "Physical, digital and service (booking) products",
+      "Physical and digital products",
       "Variants: size, colour or any option, each with its own price, SKU and stock",
       "Photos and video from the Media Library",
       "Draft, active and archived states",
@@ -116,7 +130,6 @@ export const MODULES: readonly AdminModule[] = [
       "Adjustments with a reason, kept as a ledger",
       "Low-stock thresholds and alerts",
       "Stock held for shoppers at checkout",
-      "Capacity for bookable services",
     ],
   },
   {
@@ -124,6 +137,7 @@ export const MODULES: readonly AdminModule[] = [
     label: "Media Library",
     path: "/media",
     group: "Catalog",
+    under: "products",
     icon: (s) => <MediaIcon size={s} />,
     permission: "media.manage",
     summary: "Every image, video and file your store uses, in one place.",
@@ -142,21 +156,31 @@ export const MODULES: readonly AdminModule[] = [
     group: "Sales",
     icon: (s) => <OrderIcon size={s} />,
     permission: "orders.read",
-    summary: "Every order from your storefront: paid online, on WhatsApp, by UPI, bank transfer or cash on delivery.",
+    summary: "Every order from your storefront: paid online, by UPI, bank transfer or cash on delivery.",
     features: [
       "Status tabs: unpaid, to fulfil, shipped, completed",
       "Timeline of payments, fulfilment and notes",
-      "Mark chat and offline orders as paid",
+      "Mark UPI, bank transfer and cash orders as paid",
       "Partial fulfilment and refunds",
       "PDF invoices",
       "Customers and abandoned checkouts",
     ],
   },
   {
+    key: "customers",
+    label: "Customers",
+    path: "/orders/customers",
+    group: "Sales",
+    icon: (s) => <UsersIcon size={s} />,
+    permission: "customers.read",
+    summary: "Everyone who has ordered from you, with their order history.",
+    features: [],
+  },
+  {
     key: "offers",
     label: "Offers",
     path: "/offers",
-    group: "Sales",
+    group: "Marketing",
     icon: (s) => <OfferIcon size={s} />,
     permission: "offers.manage",
     summary: "Discount codes and automatic deals.",
@@ -172,7 +196,7 @@ export const MODULES: readonly AdminModule[] = [
     key: "reviews",
     label: "Reviews",
     path: "/reviews",
-    group: "Sales",
+    group: "Marketing",
     icon: (s) => <ReviewIcon size={s} />,
     permission: "reviews.manage",
     summary: "Ratings from buyers. You decide what goes live.",
@@ -180,9 +204,10 @@ export const MODULES: readonly AdminModule[] = [
   },
   {
     key: "shipping",
-    label: "Shipping",
+    label: "Delivery & pickup",
     path: "/shipping",
-    group: "Operations",
+    group: "Store",
+    under: "settings",
     icon: (s) => <ShippingIcon size={s} />,
     permission: "shipping.manage",
     summary: "Where you deliver, what it costs, and local pickup.",
@@ -197,25 +222,26 @@ export const MODULES: readonly AdminModule[] = [
   },
   {
     key: "payments",
-    label: "Payments & Finances",
+    label: "Payments & tax",
     path: "/payments",
-    group: "Operations",
+    group: "Store",
+    under: "settings",
     icon: (s) => <PaymentIcon size={s} />,
     permission: "finances.read",
     summary: "How shoppers pay you, and every rupee that moves.",
     features: [
       "Razorpay (UPI, cards, netbanking) and Stripe",
-      "WhatsApp and Telegram chat checkout",
+      "WhatsApp enquiries about placed orders",
       "Bank transfer, UPI and cash on delivery with your instructions",
-      "Transactions, payouts and refunds",
+      "Transactions and refunds",
       "Taxes: GST and VAT",
     ],
   },
   {
     key: "analytics",
-    label: "Analytics",
+    label: "Reports",
     path: "/analytics",
-    group: "Growth",
+    group: "Reports",
     icon: (s) => <AnalyticsIcon size={s} />,
     permission: "analytics.read",
     summary: "Sales, visitors and what turns them into buyers.",
@@ -229,9 +255,9 @@ export const MODULES: readonly AdminModule[] = [
   },
   {
     key: "design",
-    label: "Store Design",
+    label: "Design",
     path: "/design",
-    group: "Growth",
+    group: "Storefront",
     icon: (s) => <DesignIcon size={s} />,
     permission: "design.manage",
     summary: "Your storefront's look, pages and menus, with a live preview.",
@@ -245,10 +271,21 @@ export const MODULES: readonly AdminModule[] = [
     ],
   },
   {
+    key: "pages",
+    label: "Pages",
+    path: "/design/pages",
+    group: "Storefront",
+    icon: (s) => <CollectionIcon size={s} />,
+    permission: "design.manage",
+    summary: "About, policy and other pages, and where they appear in your menus.",
+    features: [],
+  },
+  {
     key: "ai",
     label: "AI Studio",
     path: "/ai",
-    group: "Growth",
+    group: "Catalog",
+    under: "products",
     icon: (s) => <SparkleIcon size={s} />,
     permission: "ai.use",
     summary: "Write, translate and set up faster. Nothing changes until you apply it.",
@@ -267,7 +304,7 @@ export const MODULES: readonly AdminModule[] = [
   },
 ];
 
-export const MODULE_GROUPS: readonly ModuleGroup[] = ["Overview", "Catalog", "Sales", "Operations", "Growth", "Store"];
+export const MODULE_GROUPS: readonly ModuleGroup[] = ["Overview", "Sales", "Catalog", "Storefront", "Marketing", "Reports", "Store"];
 
 export function moduleByKey(key: ModuleKey): AdminModule {
   const found = MODULES.find((m) => m.key === key);

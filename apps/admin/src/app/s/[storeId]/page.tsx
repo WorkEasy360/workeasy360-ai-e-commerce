@@ -102,13 +102,13 @@ export default function DashboardPage() {
     let cancelled = false;
     Promise.all([
       api<SalesSummary>(`/api/v1/stores/${storeId}/sales-summary`),
-      api<{ settings: { whatsappNumber: string | null; telegramUsername: string | null; upiEnabled: boolean; bankEnabled: boolean; codEnabled: boolean } }>(`/api/v1/stores/${storeId}/checkout-settings`),
+      api<{ settings: { upiEnabled: boolean; bankEnabled: boolean; codEnabled: boolean } }>(`/api/v1/stores/${storeId}/checkout-settings`),
     ])
       .then(([summary, checkout]) => {
         if (cancelled) return;
         setSales(summary);
         const c = checkout.settings;
-        setCheckoutReady(Boolean(c.whatsappNumber || c.telegramUsername || c.upiEnabled || c.bankEnabled || c.codEnabled));
+        setCheckoutReady(Boolean(c.upiEnabled || c.bankEnabled || c.codEnabled));
       })
       .catch(() => undefined);
     return () => {

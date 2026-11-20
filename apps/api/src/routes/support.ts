@@ -5,6 +5,8 @@ import { storesRepo, withContext, type Database, type Db, type MembershipRecord,
 import type { z } from "zod";
 import { problems, sendProblem, type FieldError } from "../http/problem.js";
 import { requestIdOf } from "../http/request-context.js";
+import type { AppSettings } from "../app.js";
+import type { LaunchFeature } from "../contract/schemas.js";
 
 /** Shared plumbing for the store-scoped /api/v1 routes. */
 
@@ -44,6 +46,18 @@ export function issuesToErrors(error: z.ZodError): FieldError[] {
     message: issue.message,
   }));
 }
+
+/** Whether a launch-gated feature is on for this server. */
+export function featureOn(settings: AppSettings, feature: LaunchFeature): boolean {
+  return settings.features?.includes(feature) ?? false;
+}
+
+/** Shown when a merchant tries to set up a feature that is hidden for launch. */
+export const NOT_YET = {
+  services: "Bookable services aren't available yet. They'll come with Appointment Booking",
+  buy_x_get_y: "Buy X get Y offers aren't available yet",
+  stripe: "Stripe isn't available yet. Use Razorpay for card payments",
+} satisfies Record<LaunchFeature, string>;
 
 /** A field error as an outcome, for checks the schemas cannot express. */
 export function invalid(field: string, message: string): Failure {

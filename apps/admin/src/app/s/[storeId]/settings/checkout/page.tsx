@@ -21,7 +21,6 @@ interface Form {
   upiId: string;
   upiInstructions: string;
   whatsappNumber: string;
-  telegramUsername: string;
   orderNoteEnabled: boolean;
 }
 
@@ -40,7 +39,6 @@ function toForm(s: CheckoutSettings, currency: string): Form {
     upiId: s.upiId ?? "",
     upiInstructions: s.upiInstructions ?? "",
     whatsappNumber: s.whatsappNumber ?? "",
-    telegramUsername: s.telegramUsername ?? "",
     orderNoteEnabled: s.orderNoteEnabled,
   };
 }
@@ -62,12 +60,12 @@ function Toggle({ checked, onChange, title, text, children }: { checked: boolean
 
 /**
  * How shoppers pay and receive orders: delivery charges and pickup, cash on
- * delivery, bank transfer and UPI with your own instructions, and ordering
- * through WhatsApp or Telegram. Card payments arrive with Payments & Finances.
+ * delivery, bank transfer and UPI with your own instructions, and the
+ * WhatsApp number shoppers can message about an order. Card payments are set up in Settings → Payments & tax.
  */
 export default function CheckoutSettingsPage() {
   const ctx = useStore();
-  const ids = { fee: useId(), free: useId(), pickup: useId(), cod: useId(), bank: useId(), upi: useId(), upiNote: useId(), wa: useId(), tg: useId() };
+  const ids = { fee: useId(), free: useId(), pickup: useId(), cod: useId(), bank: useId(), upi: useId(), upiNote: useId(), wa: useId() };
   const [form, setForm] = useState<Form | undefined>();
   const [saved, setSaved] = useState("");
   const [busy, setBusy] = useState(false);
@@ -120,7 +118,6 @@ export default function CheckoutSettingsPage() {
           upiId: form.upiId,
           upiInstructions: form.upiInstructions,
           whatsappNumber: form.whatsappNumber,
-          telegramUsername: form.telegramUsername,
           orderNoteEnabled: form.orderNoteEnabled,
         },
       });
@@ -161,7 +158,7 @@ export default function CheckoutSettingsPage() {
                 {money(ids.free, form.freeOver, (v) => set("freeOver", v), "Never")}
               </div>
             </div>
-            <p className="c-hint">Zones and weight-based rates arrive with the Shipping module.</p>
+            <p className="c-hint">Zones and weight-based rates are in Settings → Delivery & pickup.</p>
           </Toggle>
           <Toggle checked={form.pickupEnabled} onChange={(v) => set("pickupEnabled", v)} title="Local pickup" text="Shoppers collect from your shop for free.">
             <div className="c-field">
@@ -212,10 +209,10 @@ export default function CheckoutSettingsPage() {
         </div>
       </Card>
 
-      <Card title="Chat ordering">
+      <Card title="WhatsApp enquiries">
         <div className="c-form">
           <p className="c-hint" style={{ fontSize: 14 }}>
-            Let shoppers send their whole cart to you as a ready-made message, and arrange payment in the chat. Leave blank to turn off.
+            After ordering, shoppers can message you about their order on WhatsApp with the details filled in. It's for questions only: a message doesn't pay for or confirm an order. Leave blank to turn off.
           </p>
           <div className="c-form-row">
             <div className="c-field">
@@ -223,15 +220,6 @@ export default function CheckoutSettingsPage() {
                 WhatsApp number <small>(with country code)</small>
               </label>
               <input id={ids.wa} className="c-input" inputMode="tel" value={form.whatsappNumber} placeholder="91 98765 43210" onChange={(e) => set("whatsappNumber", e.target.value)} />
-            </div>
-            <div className="c-field">
-              <label className="c-label" htmlFor={ids.tg}>
-                Telegram username
-              </label>
-              <span className="c-input-group">
-                <span>@</span>
-                <input id={ids.tg} className="c-input" value={form.telegramUsername} placeholder="yourshop" onChange={(e) => set("telegramUsername", e.target.value.replace(/^@/, ""))} />
-              </span>
             </div>
           </div>
           <label className="c-inline-check">

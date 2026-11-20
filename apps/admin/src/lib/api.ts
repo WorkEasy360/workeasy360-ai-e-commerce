@@ -71,7 +71,12 @@ export interface Me {
   stores: StoreSummary[];
   /** Where shops live, from the server's settings (not fixed when the admin was built). */
   storefrontOrigin: string;
+  /** Launch-gated features this server has turned on. */
+  features: LaunchFeature[];
 }
+
+/** Features hidden until their whole journey is tested; see LAUNCH_FEATURES in the API. */
+export type LaunchFeature = "services" | "buy_x_get_y" | "stripe";
 
 export interface Store {
   id: string;
@@ -102,6 +107,19 @@ let storefrontOrigin = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localho
 
 export function setStorefrontOrigin(origin: string): void {
   storefrontOrigin = origin.replace(/\/$/, "");
+}
+
+let features: readonly LaunchFeature[] = [];
+
+/** Records what /api/v1/me said about the server, before any store page renders. */
+export function setServerInfo(me: Pick<Me, "storefrontOrigin" | "features">): void {
+  setStorefrontOrigin(me.storefrontOrigin);
+  features = me.features ?? [];
+}
+
+/** Whether a launch-gated feature is on. Off features are hidden for new setups only. */
+export function featureOn(feature: LaunchFeature): boolean {
+  return features.includes(feature);
 }
 
 export function storefrontBase(): string {

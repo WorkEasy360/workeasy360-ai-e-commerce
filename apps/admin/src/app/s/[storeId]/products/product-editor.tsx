@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_HOURS, handleize, hoursProblems, optionProblems, parseMoney, syncVariants, toDecimalString, variantTitle, type WeeklyHours } from "@workeasy/commerce";
 import { ArrowLeftIcon, ArrowRightIcon, Badge, Card, CloseIcon, FileIcon, Page, PageHeader, PlusIcon, TrashIcon } from "@workeasy/ui/react";
 import { TagInput } from "@workeasy/ui/client";
-import { api, errorMessage, ApiError, storefrontUrl } from "../../../../lib/api";
+import { api, errorMessage, ApiError, featureOn, storefrontUrl } from "../../../../lib/api";
 import { PRODUCT_TYPE_LABELS, type MediaAsset, type Product, type ProductStatus, type ProductType } from "../../../../lib/catalog";
 import { HoursEditor } from "../../../../components/hours-editor";
 import { MediaPicker, Thumb } from "../../../../components/media";
@@ -416,7 +416,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
           {!productId && (
             <Card title="What are you selling?">
               <div className="c-radio-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", display: "grid" }}>
-                {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
+                {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).filter((t) => t !== "service" || featureOn("services")).map((t) => (
                   <label key={t} className="c-radio-card">
                     <input
                       type="radio"
@@ -795,7 +795,8 @@ export function ProductEditor({ productId }: { productId?: string }) {
                     Product type
                   </label>
                   <select id={ids.type} className="c-select" value={form.type} disabled={!manage} onChange={(e) => set("type", e.target.value as ProductType)}>
-                    {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
+                    {/* Services stay hidden for new setups until they move to Appointment Booking; a saved one keeps its type. */}
+                    {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).filter((t) => t !== "service" || featureOn("services") || form.type === "service").map((t) => (
                       <option key={t} value={t}>
                         {PRODUCT_TYPE_LABELS[t]}
                       </option>

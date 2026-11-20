@@ -97,6 +97,7 @@ export function apiV1Router(deps: AppDependencies): Router {
         permissions: permissionList(m),
       })),
       storefrontOrigin: settings.storefrontOrigin,
+      features: [...(settings.features ?? [])],
     };
     res.json(body);
   });

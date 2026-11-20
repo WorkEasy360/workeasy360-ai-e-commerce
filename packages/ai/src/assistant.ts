@@ -38,24 +38,18 @@ export const ASSISTANT_TOOLS: readonly AssistantToolSpec[] = [
   { name: "list_bookings", description: "Booked appointments for service products from a date, with customer, service and payment status.", args: '{"from"?: "YYYY-MM-DD", "days"?: 1-31}', permission: ["orders.read"] },
   { name: "list_offers", description: "Discount codes and automatic offers: type, value, conditions, schedule, usage and whether they are on.", args: "{}", permission: ["offers.manage"] },
   { name: "pending_reviews", description: "Reviews waiting for moderation, newest first, and how many there are.", args: '{"limit"?: 1-10}', permission: ["reviews.manage"] },
-  { name: "payment_setup", description: "How shoppers can pay: connected card gateways (provider, test or live mode, status) and which chat and offline methods are on. Never keys.", args: "{}", permission: ["finances.read", "payments.manage"] },
+  { name: "payment_setup", description: "How shoppers can pay: connected card gateways (provider, test or live mode, status) and which offline methods and WhatsApp enquiries are on. Never keys.", args: "{}", permission: ["finances.read", "payments.manage"] },
 ];
 
 /** A change the assistant may propose. The member confirms it; the existing endpoint carries it out. */
 export interface AssistantActionSpec {
-  kind: "mark_order_paid" | "mark_order_fulfilled" | "cancel_order" | "create_product" | "update_product" | "create_discount";
+  kind: "mark_order_fulfilled" | "cancel_order" | "create_product" | "update_product" | "create_discount";
   description: string;
   args: string;
   permission: readonly string[];
 }
 
 export const ASSISTANT_ACTIONS: readonly AssistantActionSpec[] = [
-  {
-    kind: "mark_order_paid",
-    description: "Record that an unpaid WhatsApp, Telegram, UPI, bank transfer or cash on delivery order has been paid. Only when the member says the money has arrived. Never for card orders: those are confirmed by the gateway.",
-    args: '{"orderNumber": integer}',
-    permission: ["orders.manage"],
-  },
   { kind: "mark_order_fulfilled", description: "Mark every remaining item of an open order as fulfilled, without tracking details. For tracking or partial shipments, send the member to the order page instead.", args: '{"orderNumber": integer}', permission: ["orders.manage"] },
   { kind: "cancel_order", description: "Cancel an open order, optionally returning its items to stock. Paid card orders need a refund first, from the order page.", args: '{"orderNumber": integer, "restock": boolean}', permission: ["orders.manage"] },
   {
@@ -181,7 +175,7 @@ You help the store's team (owners, admins, staff, fulfilment staff and analysts)
 ## Examples
 - "How many orders today?" → store_overview for today's date if needed, then search_orders and count the ones placed today, or sales_report for 7 days if they want revenue.
 - "Find Rahul's orders" → search_orders with query "Rahul", list them briefly.
-- "Mark order 1042 as paid, he paid by UPI" → get_order 1042, check it is an unpaid UPI order, then propose mark_order_paid.
+- "Mark order 1042 as paid, he paid by UPI" → you can't record payments: a member checks the money arrived and marks it paid on the order page. Navigate "order:1042" and say so.
 - "How do I add a product?" → numbered steps from "How the app works", navigate "new_product", and offer to add it here if they share the name and price.
 - "Add Masala Chai 250 g for ₹250, 40 in stock, make it live" → propose create_product with title "Masala Chai 250 g", price 250, stock 40, status "active".
 - "Put the Assam tea on sale at ₹280" → search_products "Assam", then propose update_product with price 280 and compareAtPrice set to its current price.
@@ -276,7 +270,6 @@ export interface NewDiscount {
 }
 
 export type ProposedAction =
-  | { kind: "mark_order_paid"; orderNumber: number }
   | { kind: "mark_order_fulfilled"; orderNumber: number }
   | { kind: "cancel_order"; orderNumber: number; restock: boolean }
   | { kind: "create_product"; product: NewProduct }
@@ -311,7 +304,7 @@ const tagList = (v: unknown): string[] => (Array.isArray(v) ? v.map((t) => str(t
 function parseAction(v: unknown): ProposedAction | null | undefined {
   if (v === null || v === undefined) return null;
   if (!isObject(v)) return undefined;
-  if (v.kind === "mark_order_paid" || v.kind === "mark_order_fulfilled" || v.kind === "cancel_order") {
+  if (v.kind === "mark_order_fulfilled" || v.kind === "cancel_order") {
     if (!isOrderNumber(v.orderNumber)) return undefined;
     return v.kind === "cancel_order" ? { kind: "cancel_order", orderNumber: v.orderNumber, restock: v.restock !== false } : { kind: v.kind, orderNumber: v.orderNumber };
   }

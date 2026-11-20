@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import type { Transaction } from "kysely";
-import { chatOrderMessage, deliveryOptions, isDate, localParts, slotsOn, telegramLink, whatsappLink, type DeliveryMethod, type PricingLine } from "@workeasy/commerce";
+import { chatOrderMessage, deliveryOptions, isDate, localParts, slotsOn, whatsappLink, type DeliveryMethod, type PricingLine } from "@workeasy/commerce";
 import {
   analyticsRepo,
   checkoutRepo,
@@ -736,12 +736,9 @@ export function shopperOrder(
         : order.paymentMethod === "cod"
           ? (settings.codInstructions ?? "Pay when your order arrives.")
           : null;
-  const chat =
-    order.paymentMethod === "whatsapp" && settings.whatsappNumber
-      ? { channel: "whatsapp" as const, url: whatsappLink(settings.whatsappNumber, message), message }
-      : order.paymentMethod === "telegram" && settings.telegramUsername
-        ? { channel: "telegram" as const, url: telegramLink(settings.telegramUsername), message }
-        : null;
+  // An enquiry about this order, not a way to pay: the order is already placed
+  // with a real payment method, and sending the message changes nothing.
+  const chat = order.status === "open" && settings.whatsappNumber ? { channel: "whatsapp" as const, url: whatsappLink(settings.whatsappNumber, message), message } : null;
   return {
     number: order.number,
     status: order.status,

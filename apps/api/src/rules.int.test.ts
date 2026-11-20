@@ -68,7 +68,6 @@ beforeAll(async () => {
     upiId: null,
     upiInstructions: null,
     whatsappNumber: null,
-    telegramUsername: null,
     orderNoteEnabled: true,
   });
   const tea = await as(owner, "post", `${admin()}/products`).send({ type: "physical", status: "active", title: "Kashmiri Kahwa", taxRateBps: 500, variants: [{ options: [], priceMinor: 40000, stock: 50, weightGrams: 300 }] });

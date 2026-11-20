@@ -18,7 +18,7 @@ import { problems, sendProblem } from "../http/problem.js";
 import { credentialsFor } from "../payments/gateways.js";
 import { invoicePdf } from "../payments/invoice.js";
 import { orderDetail } from "./orders.js";
-import { actorOf, invalid, issuesToErrors, respond, UUID_PATTERN, type StoreAccess } from "./support.js";
+import { actorOf, featureOn, invalid, NOT_YET, issuesToErrors, respond, UUID_PATTERN, type StoreAccess } from "./support.js";
 
 const PROVIDERS = ["razorpay", "stripe"] as const;
 const PAGE_SIZE = 50;
@@ -70,6 +70,12 @@ export function moneyRoutes(router: Router, { db, payments, settings }: AppDepen
       return;
     }
     const key = payments.secretsKey;
+    if (provider === "stripe" && !featureOn(settings, "stripe")) {
+      // A store that already connected Stripe can keep updating its keys.
+      const connected = await withPermission(res, req.params.storeId, "payments.manage", async (trx) => ({ kind: "ok", body: (await moneyRepo.listAccounts(trx)).some((a) => a.provider === "stripe") }));
+      if (typeof connected === "symbol" || connected.kind !== "ok") return respond(res, connected);
+      if (!connected.body) return respond(res, invalid("provider", NOT_YET.stripe));
+    }
     if (!key) {
       sendProblem(res, 503, "PAYMENTS_NOT_CONFIGURED", "Card payments aren't set up on this server yet (SECRETS_ENCRYPTION_KEY)");
       return;

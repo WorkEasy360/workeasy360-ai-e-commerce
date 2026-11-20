@@ -6,7 +6,10 @@ const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:4000"
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/;
 const HANDLE_PATTERN = /^[a-z0-9-]{1,100}$/;
 
+/** "whatsapp" and "telegram" appear only on older orders; checkout no longer offers them. */
 export type PaymentMethod = "card" | "cod" | "bank" | "upi" | "whatsapp" | "telegram";
+/** The ways a shopper can pay at checkout. */
+export type CheckoutPaymentMethod = "card" | "cod" | "bank" | "upi";
 export type DeliveryMethod = "delivery" | "pickup" | "none";
 
 /** A store as shoppers see it, from GET /public/v1/stores/:slug. */
@@ -19,7 +22,7 @@ export interface PublicStore {
 }
 
 export interface CheckoutOptions {
-  paymentMethods: PaymentMethod[];
+  paymentMethods: CheckoutPaymentMethod[];
   /** The connected card gateway, when "card" is offered. */
   card: { provider: "razorpay" | "stripe" } | null;
   delivery: { enabled: boolean; feeMinor: number; freeOverMinor: number | null };
@@ -105,7 +108,8 @@ export interface ShopperOrder {
   shipments: Array<{ carrier: string | null; trackingNumber: string | null; trackingUrl: string | null; units: number; at: string }>;
   items: Array<{ title: string; variantTitle: string | null; productType: string; imageId: string | null; quantity: number; unitPriceMinor: number; totalMinor: number; bookingLabel: string | null }>;
   paymentInstructions: string | null;
-  chat: { channel: "whatsapp" | "telegram"; url: string; message: string } | null;
+  /** Message the shop about this order on WhatsApp: an enquiry, not a payment. */
+  chat: { channel: "whatsapp"; url: string; message: string } | null;
 }
 
 /**

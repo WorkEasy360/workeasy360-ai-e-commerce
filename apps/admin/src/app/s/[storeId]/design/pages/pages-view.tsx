@@ -45,7 +45,7 @@ export function PagesView() {
   if (!allowed) {
     return (
       <EmptyState icon={<FileIcon size={26} />} title="You can't edit the store's pages">
-        Ask an owner or admin for access to Store Design.
+        Ask an owner or admin for access to the storefront design.
       </EmptyState>
     );
   }
@@ -94,9 +94,9 @@ export function PagesView() {
   return (
     <Page>
       <a className="c-back" href={base}>
-        <ArrowLeftIcon size={14} /> Store Design
+        <ArrowLeftIcon size={14} /> Design
       </a>
-      <PageHeader title="Pages" eyebrow="Store Design" subtitle="About us, shipping and returns policies, contact details: pages you can link from your menus." actions={items && items.length > 0 ? add : undefined} />
+      <PageHeader title="Pages" eyebrow="Storefront" subtitle="About us, shipping and returns policies, contact details: pages you can link from your menus." actions={items && items.length > 0 ? add : undefined} />
       {error && (
         <p role="alert" className="c-error">
           {error}
@@ -167,7 +167,7 @@ export function PagesView() {
       )}
       {items && items.length > 0 && (
         <p className="c-hint" style={{ marginTop: 12 }}>
-          To show a page in your shop&apos;s header or footer, add it under Store Design → Menus &amp; languages. Published pages are listed there.
+          To show a page in your shop&apos;s header or footer, add it under Storefront → Design → Menus &amp; languages. Published pages are listed there.
         </p>
       )}
       {choosing && (

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrandMark, CloseIcon, ExternalIcon, LogoutIcon, MenuIcon, PlusIcon, SettingsIcon, StoreIcon } from "@workeasy/ui/react";
 import { ThemeToggle } from "@workeasy/ui/theme-toggle";
-import { api, ApiError, setStorefrontOrigin, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
+import { api, ApiError, setServerInfo, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
 import { MODULE_GROUPS, MODULES } from "../../../lib/modules";
 import { AssistantPanel } from "./assistant-panel";
 import { GlobalSearch, Notifications } from "./shell-tools";
@@ -57,7 +57,7 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api<Me>("/api/v1/me").then((me) => (setStorefrontOrigin(me.storefrontOrigin), me)), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
+    Promise.all([api<Me>("/api/v1/me").then((me) => (setServerInfo(me), me)), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
       .then(([me, detail]) => {
         if (!cancelled) setState({ kind: "ready", me, detail });
       })
@@ -108,8 +108,11 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
     can,
     setStore: (store) => setState({ ...ready, detail: { ...ready.detail, store } }),
   };
-  const visible = MODULES.filter((m) => !m.permission || can(m.permission));
+  const visible = MODULES.filter((m) => !m.under && (!m.permission || can(m.permission)));
   const isCurrent = (path: string) => (path === "" ? pathname === base : pathname === `${base}${path}` || pathname.startsWith(`${base}${path}/`));
+  // The most specific module this page belongs to (Customers over Orders on /orders/customers), shown as its sidebar entry.
+  const here = MODULES.filter((m) => isCurrent(m.path)).toSorted((a, b) => b.path.length - a.path.length)[0];
+  const currentKey = here?.under ?? here?.key;
   const otherStores = ready?.me.stores.filter((s) => s.id !== storeId) ?? [];
 
   return (
@@ -131,14 +134,13 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
             if (items.length === 0) return null;
             return (
               <div className="c-nav-group" key={group} style={group === "Store" ? { marginTop: "auto", paddingTop: 16 } : undefined}>
-                {group !== "Overview" && group !== "Store" && <p className="c-nav-label">{group}</p>}
+                {group !== "Overview" && group !== "Store" && items.length > 1 && <p className="c-nav-label">{group}</p>}
                 <ul className="c-nav">
                   {items.map((m) => (
                     <li key={m.key}>
-                      <a href={`${base}${m.path}`} aria-current={isCurrent(m.path) ? "page" : undefined}>
+                      <a href={`${base}${m.path}`} aria-current={m.key === currentKey ? "page" : undefined}>
                         {m.icon(18)}
                         {m.label}
-                        {m.key === "ai" && <span className="c-nav-tag">AI</span>}
                       </a>
                     </li>
                   ))}

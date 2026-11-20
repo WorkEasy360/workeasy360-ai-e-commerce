@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatMoney } from "@workeasy/commerce";
 import { Badge, EmptyState, OrderIcon, Page, PageHeader, SearchIcon } from "@workeasy/ui/react";
-import { api, errorMessage, storefrontUrl } from "../../../../lib/api";
+import { api, errorMessage, featureOn, storefrontUrl } from "../../../../lib/api";
 import { moduleByKey } from "../../../../lib/modules";
 import { orderBadges, PAYMENT_LABELS, type OrderSummary } from "../../../../lib/orders";
 import { useStore } from "../store-shell";
@@ -79,9 +79,12 @@ export default function OrdersPage() {
       <a className="c-btn" href={`${base}/orders/customers`}>
         Customers
       </a>
-      <a className="c-btn" href={`${base}/orders/bookings`}>
-        Bookings
-      </a>
+      {/* Bookings live in each order; this calendar returns only if services are turned on. */}
+      {featureOn("services") && (
+        <a className="c-btn" href={`${base}/orders/bookings`}>
+          Bookings
+        </a>
+      )}
       <a className="c-btn" href={`${base}/orders/abandoned`}>
         Abandoned checkouts
       </a>

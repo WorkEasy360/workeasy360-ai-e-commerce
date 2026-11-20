@@ -86,7 +86,9 @@ function stubAssistant(request: CompletionRequest): { text: string; usage: { inp
     }
     if (data.error) out = { type: "answer", text: `I couldn't get that: ${String(data.error)}`, navigate: null, action: null };
     else if (tool === "get_order" && /\b(paid|received)\b/.test(question) && orderNumber)
-      out = { type: "answer", text: `Order #${orderNumber} is ready to be marked as paid. Confirm below once you're sure the money has arrived.`, navigate: null, action: { kind: "mark_order_paid", orderNumber } };
+      out = { type: "answer", text: `I can't record payments. Check the money has arrived, then mark order #${orderNumber} paid on its page.`, navigate: `order:${orderNumber}`, action: null };
+    else if (tool === "get_order" && /\b(dispatched|shipped|fulfilled)\b/.test(question) && orderNumber)
+      out = { type: "answer", text: `Order #${orderNumber} can be marked as fulfilled. Confirm below.`, navigate: null, action: { kind: "mark_order_fulfilled", orderNumber } };
     else {
       const items = Array.isArray(data.items) ? data.items.length : undefined;
       out = { type: "answer", text: items === undefined ? `Here's what I found (${tool}).` : `I found ${items} result${items === 1 ? "" : "s"} (${tool}).`, navigate: null, action: null };
@@ -113,7 +115,7 @@ function stubAssistant(request: CompletionRequest): { text: string; usage: { inp
     out = { type: "answer", text: `Opening ${page}.`, navigate: page, action: null };
   } else {
     const route: Array<[RegExp, string, Record<string, unknown>]> = [
-      [/\b(paid|orders?)\b/, orderNumber ? "get_order" : "search_orders", orderNumber ? { number: orderNumber } : {}],
+      [/\b(paid|orders?|dispatched|shipped|fulfilled)\b/, orderNumber ? "get_order" : "search_orders", orderNumber ? { number: orderNumber } : {}],
       [/\b(stock|inventory)\b/, "stock_report", { filter: "low" }],
       [/\b(sales|revenue|visitors|best)\b/, "sales_report", { days: 30 }],
       [/\bproducts?\b/, "search_products", {}],

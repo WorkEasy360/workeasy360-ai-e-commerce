@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LAUNCH_FEATURES } from "./contract/schemas.js";
 
 /** An empty value (`KEY=` in .env) means unset. */
 const unsetIfEmpty = (v: unknown) => (v === "" ? undefined : v);
@@ -56,6 +57,12 @@ const ConfigSchema = z
     OPENAI_API_KEY: z.preprocess(unsetIfEmpty, z.string().optional()),
     GEMINI_API_KEY: z.preprocess(unsetIfEmpty, z.string().optional()),
     /** Assistant questions per store per day. */
+    /** Comma-separated launch-gated features to turn on: services, buy_x_get_y, stripe. Empty means all off. */
+    COMMERCE_FEATURES: z
+      .string()
+      .default("")
+      .transform((v) => [...new Set(v.split(",").map((f) => f.trim()).filter(Boolean))])
+      .pipe(z.array(z.enum(LAUNCH_FEATURES))),
     ASSISTANT_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000).default(200),
   })
   .superRefine((config, ctx) => {

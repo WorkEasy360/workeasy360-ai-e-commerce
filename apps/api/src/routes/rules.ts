@@ -3,7 +3,7 @@ import { auditRepo, rulesRepo, type Discount } from "@workeasy/database";
 import type { AppDependencies } from "../app.js";
 import { BookingsQuerySchema, DiscountBodySchema, TaxBodySchema, ZoneBodySchema, ZoneOrderBodySchema } from "../contract/rules.js";
 import { problems } from "../http/problem.js";
-import { actorOf, invalid, issuesToErrors, respond, UUID_PATTERN, type StoreAccess, type Trx } from "./support.js";
+import { actorOf, featureOn, invalid, NOT_YET, issuesToErrors, respond, UUID_PATTERN, type StoreAccess, type Trx } from "./support.js";
 
 function discountJson(d: Discount, redeemedMinor = 0) {
   return {
@@ -26,7 +26,8 @@ async function targetsExist(trx: Trx, appliesTo: string, ids: readonly string[])
 }
 
 /** Offers, shipping zones and rates, tax settings, and the bookings calendar. */
-export function rulesRoutes(router: Router, _deps: AppDependencies, { withPermission }: StoreAccess): void {
+export function rulesRoutes(router: Router, { settings }: AppDependencies, { withPermission }: StoreAccess): void {
+  const buyXGetYOn = featureOn(settings, "buy_x_get_y");
   // Offers ------------------------------------------------------------------------------------------
 
   router.get("/stores/:storeId/discounts", async (req, res) => {
@@ -64,6 +65,11 @@ export function rulesRoutes(router: Router, _deps: AppDependencies, { withPermis
       respond(
         res,
         await withPermission(res, storeId, "offers.manage", async (trx) => {
+          if (b.type === "buy_x_get_y" && !buyXGetYOn) {
+            // An existing buy X get Y offer can still be edited or paused; no new ones.
+            const current = id ? await rulesRepo.getDiscount(trx, id) : undefined;
+            if (current?.type !== "buy_x_get_y") return invalid("type", NOT_YET.buy_x_get_y);
+          }
           if (!(await targetsExist(trx, input.appliesTo, input.targetIds))) return invalid("targetIds", "Some of the chosen items no longer exist");
           if (offer && offer.getAppliesTo !== "same" && !(await targetsExist(trx, offer.getAppliesTo, offer.getTargetIds))) return invalid("buyXGetY.getTargetIds", "Some of the chosen items no longer exist");
           if (input.code) {

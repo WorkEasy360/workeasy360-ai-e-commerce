@@ -86,7 +86,6 @@ body { background: var(--we-surface); }
 .sf-btn-light:hover { background: #fff; transform: translateY(-1px); }
 .sf-btn-ghost { background: var(--we-background); color: var(--we-text-primary); border: 1px solid var(--we-border); }
 .sf-btn-wa, .sf-btn-wa:hover { background: #1FA855; }
-.sf-btn-tg, .sf-btn-tg:hover { background: #2AA3DF; }
 .sf-btn-block { width: 100%; }
 
 .sf-section { margin-top: 56px; }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { formatMoney } from "@workeasy/commerce";
 import { Badge, Card, CopyIcon, Page, PageHeader, PaymentIcon, RevenueIcon, StatCard } from "@workeasy/ui/react";
 import { Dialog } from "@workeasy/ui/client";
-import { api, ApiError, errorMessage } from "../../../../lib/api";
+import { api, ApiError, errorMessage, featureOn } from "../../../../lib/api";
 import { moduleByKey } from "../../../../lib/modules";
 import { PAYMENT_LABELS, PROVIDER_LABELS } from "../../../../lib/orders";
 import { useStore } from "../store-shell";
@@ -287,7 +287,8 @@ export function PaymentsView() {
           </p>
         )}
         <div className="c-provider-grid">
-          {(["razorpay", "stripe"] as const).map((provider) => {
+          {/* Stripe shows only once it is turned on for this server, or for a store that already connected it. */}
+          {(["razorpay", "stripe"] as const).filter((provider) => provider !== "stripe" || featureOn("stripe") || accounts?.accounts.some((a) => a.provider === "stripe")).map((provider) => {
             const p = PROVIDERS[provider];
             const account = accounts?.accounts.find((a) => a.provider === provider);
             return (
