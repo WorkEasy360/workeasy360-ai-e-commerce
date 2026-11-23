@@ -133,8 +133,10 @@ describe("Store Design", () => {
     const preview = await request(app).get(`${shop}?preview=${encodeURIComponent(token)}`);
     expect(preview.body).toMatchObject({ theme: draft, preview: true });
     expect(preview.headers["cache-control"]).toBe("no-store");
-    // Tamper with the signature's last character (always a different one).
-    const tampered = `${token.slice(0, -1)}${token.endsWith("x") ? "y" : "x"}`;
+    // Tamper with a character in the middle of the signature. Not the last one: in base64url its low bits are
+    // padding, so some changes there decode to the same signature and the test passed or failed by chance.
+    const at = token.indexOf(".") + 10;
+    const tampered = `${token.slice(0, at)}${token[at] === "A" ? "B" : "A"}${token.slice(at + 1)}`;
     expect((await request(app).get(`${shop}?preview=${encodeURIComponent(tampered)}`)).body.preview).toBe(false);
     expect((await request(app).get(`${shop}?preview=${encodeURIComponent(`${Math.floor(Date.now() / 1000) - 5}.${token.split(".")[1]}`)}`)).body.preview).toBe(false);
 
