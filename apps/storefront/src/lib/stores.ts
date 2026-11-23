@@ -57,6 +57,8 @@ export interface ProductCard {
   priceMax: number;
   compareAtMinor: number | null;
   available: boolean;
+  /** Set when the card can add the product to the cart directly (one option, in stock, not a booking). */
+  quickAddVariantId: string | null;
 }
 
 export interface ShopProduct {

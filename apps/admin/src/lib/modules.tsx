@@ -3,6 +3,8 @@ import {
   AnalyticsIcon,
   CollectionIcon,
   DashboardIcon,
+  HomeIcon,
+  MegaphoneIcon,
   DesignIcon,
   InventoryIcon,
   MediaIcon,
@@ -14,6 +16,7 @@ import {
   SettingsIcon,
   ShippingIcon,
   SparkleIcon,
+  StoreIcon,
   UsersIcon,
 } from "@workeasy/ui/react";
 
@@ -310,4 +313,36 @@ export function moduleByKey(key: ModuleKey): AdminModule {
   const found = MODULES.find((m) => m.key === key);
   if (!found) throw new Error(`Unknown module ${key}`);
   return found;
+}
+
+/**
+ * The eight sidebar sections of the merchant menu (development note v2,
+ * section 2; Commerce designs, Nov 2026). Each module belongs to one; a
+ * section with several pages shows them as pill tabs above the page.
+ */
+export type SectionKey = "home" | "orders" | "catalog" | "customers" | "storefront" | "marketing" | "reports" | "settings";
+
+export interface AdminSection {
+  key: SectionKey;
+  label: string;
+  icon: (size?: number) => ReactNode;
+  /** The modules in this section, in tab order; the first one the member may open is where the sidebar link goes. */
+  modules: readonly ModuleKey[];
+  /** Short label for the phone tab bar. */
+  short?: string;
+}
+
+export const SECTIONS: readonly AdminSection[] = [
+  { key: "home", label: "Home", icon: (s) => <HomeIcon size={s} />, modules: ["dashboard"] },
+  { key: "orders", label: "Orders", icon: (s) => <OrderIcon size={s} />, modules: ["orders"] },
+  { key: "catalog", label: "Catalog", short: "Products", icon: (s) => <ProductIcon size={s} />, modules: ["products", "collections", "inventory", "media", "ai"] },
+  { key: "customers", label: "Customers", icon: (s) => <UsersIcon size={s} />, modules: ["customers"] },
+  { key: "storefront", label: "Storefront", short: "Store", icon: (s) => <StoreIcon size={s} />, modules: ["design", "pages"] },
+  { key: "marketing", label: "Marketing", icon: (s) => <MegaphoneIcon size={s} />, modules: ["offers", "reviews"] },
+  { key: "reports", label: "Reports", icon: (s) => <AnalyticsIcon size={s} />, modules: ["analytics"] },
+  { key: "settings", label: "Settings", icon: (s) => <SettingsIcon size={s} />, modules: ["settings", "shipping", "payments"] },
+];
+
+export function sectionOf(key: ModuleKey): AdminSection {
+  return SECTIONS.find((s) => s.modules.includes(key)) ?? SECTIONS[0]!;
 }

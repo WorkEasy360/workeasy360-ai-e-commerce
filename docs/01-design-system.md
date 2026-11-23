@@ -6,34 +6,36 @@ Tokens are defined once, in `packages/ui/src/tokens.ts`, and published as CSS cu
 
 ## Name and logo
 
-- Inside the product the name is **Workeasy AI Commerce** (`PRODUCT_NAME` in `packages/ui/src/components/logo.tsx`). Lockups show "Workeasy" with "AI Commerce" beneath it.
+- Inside the product the name is **WorkEasy Commerce** (`PRODUCT_NAME` in `packages/ui/src/components/logo.tsx`). The sidebar and sign-in page show the "WorkEasy360" wordmark (`Wordmark`, with "360" in green) above a green **Commerce** badge (`.c-brand-badge`), as in the Commerce designs of November 2026.
 - The logo artwork is `packages/ui/assets/logo.jpg`. `BrandMark` and the `icon.svg` favicons draw a vector traced from it, in the logo green `#00BF62` (`brand.logo`). That green is used for the mark only, never for UI.
 - Technical identifiers keep the old `workeasy360` spelling so nothing that already exists breaks: the custom-domain TXT record `_workeasy360.<domain>`, the database ownership mark, email message IDs and package names.
 
 ## Colour
 
-Aim for roughly **70% white and neutral surfaces, 20% navy structure and 10% green accents**.
+The Commerce look (November 2026 designs) is **white cards on a pale green-grey canvas, a deep teal sidebar, and green for actions and the current page**. Figures sit beside coloured icon tiles: green for orders, amber for money, blue for people, pink for products (`--we-tile-*`).
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
 | `--we-primary` | `#1B3040` navy | `#27455A` | Navigation, headings, high-emphasis structure (bulk bar, hero, badges) |
 | `--we-primary-hover` | `#112532` | `#315770` | Hover on navy fills |
-| `--we-accent` | `#4ADE80` green | `#4ADE80` | Primary buttons, active indicators, progress, "done" ticks |
-| `--we-accent-hover` | `#22C55E` | `#22C55E` | Hover on green fills |
-| `--we-on-accent` | `#1B3040` | `#112532` | Text on green (7.8:1). White on green fails contrast |
+| `--we-accent` | `#15803D` green | `#4ADE80` | Primary buttons, the selected filter pill, ticks, links |
+| `--we-accent-hover` | `#166534` | `#22C55E` | Hover on green fills |
+| `--we-on-accent` | `#FFFFFF` | `#112532` | Text on green: white on `#15803D` is 5:1 |
+| `--we-accent-bright` | `#22C55E` | `#22C55E` | Fills without text only: progress bars, chart lines |
 | `--we-accent-soft` / `--we-accent-strong` | `#DCFCE7` / `#166534` | | Pale green background / green text |
-| `--we-background` | `#F8FAFC` | `#0B1620` | Application canvas, table headers |
+| `--we-background` | `#F4F7F5` | `#0B1620` | Application canvas |
 | `--we-surface` | `#FFFFFF` | `#112532` | Cards, top bar, inputs, menus, dialogs |
 | `--we-surface-muted` | `#F1F5F9` | `#16303F` | Hover, selected rows, tags, segmented tracks |
 | `--we-border` / `--we-border-strong` | `#E2E8F0` / `#CBD5E1` | `#27455A` / `#36576E` | Card and table lines / button outlines and dashed edges |
 | `--we-border-input` | `#7D8BA0` | `#5A7A91` | Text field outlines: at least 3:1 against every surface they sit on (WCAG 1.4.11) |
 | `--we-text-primary` | `#1B3040` | `#F1F5F9` | Headings, titles, values |
 | `--we-text-body` | `#334155` | `#CBD5E1` | Body text |
-| `--we-text-secondary` | `#64748B` | `#94A3B8` | Hints, labels, metadata |
-| `--we-link` | `#166534` | `#4ADE80` | Text links, always underlined |
-| `--we-focus` | `#1B3040` | `#4ADE80` | Focus rings. Green on navy surfaces (sidebar, bulk bar) |
+| `--we-text-secondary` | `#5B6B7E` | `#94A3B8` | Hints, labels, metadata (5:1 on the canvas and pale greens) |
+| `--we-link` | `#15803D` | `#4ADE80` | Text links, always underlined |
+| `--we-focus` | `#15803D` | `#4ADE80` | Focus rings |
+| `--we-sidebar` / `--we-sidebar-selected` | `#0F2B2F` / `#15803D` | `#0A2125` / `#15803D` | The deep teal sidebar and its green current-page pill |
 
-**Never use brand green for small text on white** (1.9:1). For green text, use `--we-accent-strong` or `--we-success-text`. Secondary text passes AA on white and on the canvas, but not on `--we-surface-muted` (4.3:1), so don't put it there.
+**Never put white text on the bright green** (`#22C55E`, 2.3:1): it is for fills without text. The action green `#15803D` carries white text and reads as green text on white (both 5:1). Secondary text passes AA on white, the canvas, `--we-surface-muted` and the pale greens.
 
 ### Status colours
 
@@ -109,10 +111,12 @@ Dark mode follows the operating system until someone chooses with the theme togg
 
 All WorkEasy360 products share this shell; only the navigation items differ.
 
-- **Sidebar** (navy, 248px): product logo and name, then the navigation in groups. The active item has a lighter fill, a green bar and a green icon. On screens narrower than 960px the sidebar becomes a drawer.
-- **Top bar** (white, 56px):
-  - Left: the workspace switcher (here, the store) and search. Search jumps to any module or page the role can open; press `/` or Ctrl+K to focus it.
-  - Right: product actions (View store), notifications, settings, the theme toggle and the account menu.
+- **Sidebar** (deep teal, 256px): the WorkEasy360 wordmark, the green Commerce badge, the eight sections (below) and, at the foot, a "Your store is live!" card with the store's address and View Store. The current section is a solid green pill; Orders shows how many orders wait to be fulfilled.
+- **Top bar** (white, 64px):
+  - Left: the store switcher and search. Search jumps to any module or page the role can open; press `/` or Ctrl+K to focus it.
+  - Right: notifications, the theme toggle and the signed-in person with their role. The AI assistant opens from its floating button in the bottom-right corner.
+- **Section tabs:** a section with several pages (Catalog, Storefront, Marketing) shows them as pill tabs above the page.
+- **Phones** (under 960px): the sidebar becomes a drawer, and a bottom tab bar shows Home, Orders, Products, Store and More (which opens the drawer). Under 600px the top bar shows a compact WorkEasy360 Commerce logo instead of the store switcher; switching stores is in the account menu. Tables marked `.c-table-stack` become one card per row.
 - **Notifications** list what needs attention, using the counts the module pages already show: unpaid and unfulfilled orders, reviews to moderate, and low or out-of-stock items. Each role sees only what it can act on.
 
 ## The page contract
@@ -125,18 +129,22 @@ Every admin page has the same skeleton, built from `@workeasy/ui/react`:
 4. Content: `<Card>`, `.c-stats` with `<StatCard>`, `.c-table-wrap` tables, `.c-form` forms.
 5. Before there is data: `<EmptyState icon title actions>`.
 
-The 14 modules are declared once, in `apps/admin/src/lib/modules.tsx`, with their label, path, group, icon, permission, summary, primary action and feature list. The sidebar, the search and each module page all read from that list, so a module's name or icon can't drift between places.
+The modules are declared once, in `apps/admin/src/lib/modules.tsx`, with their label, path, group, icon, permission, summary, primary action and feature list, and grouped into the eight sidebar sections (`SECTIONS`). The sidebar, the section tabs, the search and each module page all read from those lists, so a module's name or icon can't drift between places.
 
 ## Sidebar groups
 
-- **Overview:** Dashboard
-- **Catalog:** Products, Collections, Inventory, Media Library
-- **Sales:** Orders, Offers, Reviews
-- **Operations:** Shipping, Payments & Finances
-- **Growth:** Analytics, Store Design, AI Studio
-- **Store:** Settings (pinned to the bottom)
+The merchant menu from the development note (v2, section 2), as eight sections:
 
-The sidebar shows only the modules the user's role can open. The API enforces the same permissions on every request.
+- **Home:** the dashboard
+- **Orders**
+- **Catalog:** Products, Collections, Inventory (Media Library and AI Studio open from the editors)
+- **Customers**
+- **Storefront:** Design, Pages
+- **Marketing:** Offers, Reviews
+- **Reports**
+- **Settings:** General, Checkout, Delivery & pickup, Payments & tax, Staff, Domain, Audit log
+
+The sidebar shows only the sections the user's role can open, each linking to its first page they may see. The API enforces the same permissions on every request.
 
 ## Storefronts
 

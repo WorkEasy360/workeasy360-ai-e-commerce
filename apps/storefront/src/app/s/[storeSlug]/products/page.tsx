@@ -39,7 +39,7 @@ export default async function AllProducts({ params, searchParams }: Props) {
         <form className="sf-toolbar" action={`/s/${store.slug}/products`}>
           <div className="c-search" style={{ minWidth: 200 }}>
             <SearchIcon size={16} />
-            <input className="c-input" type="search" name="q" defaultValue={q} placeholder={t("list.search")} aria-label={t("search.placeholder")} />
+            <input id="search" className="c-input" type="search" name="q" defaultValue={q} placeholder={t("list.search")} aria-label={t("search.placeholder")} />
           </div>
           <select className="c-select" name="sort" defaultValue={sort} aria-label={t("list.sort")} style={{ width: "auto" }}>
             {SORTS.map((s) => (

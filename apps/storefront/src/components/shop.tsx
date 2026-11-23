@@ -1,6 +1,8 @@
 import { formatMoney, formatPriceRange } from "@workeasy/commerce";
 import { BrandMark, ProductIcon } from "@workeasy/ui/react";
+import type { MessageKey } from "../lib/i18n";
 import { mediaUrl, type ProductCard } from "../lib/stores";
+import { QuickAdd } from "./quick-add";
 
 /** Price with the struck-through compare-at price when it shows a saving. */
 export function Price({ min, max, compareAt, currency, locale, wasLabel = "Was " }: { min: number; max?: number; compareAt?: number | null; currency: string; locale: string; wasLabel?: string }) {
@@ -51,27 +53,49 @@ export interface GridLabels {
   soldOut: string;
   sale: string;
   was: string;
+  add: string;
+  added: string;
+  options: string;
+  /** "{n}% OFF" with the number filled in. */
+  off: (n: number) => string;
 }
 
+/**
+ * Product cards as in the Commerce designs: photo with the saving as a
+ * badge, title, price with the old price struck through, and Add to Cart
+ * for products with a single option in stock (others open the product).
+ */
 export function ProductGrid({ products, slug, currency, locale, labels }: { products: ProductCard[]; slug: string; currency: string; locale: string; labels: GridLabels }) {
   return (
     <div className="sf-grid">
-      {products.map((p) => (
-        <a key={p.id} className="sf-card" href={`/s/${slug}/p/${p.handle}`}>
-          <span className="sf-card-img">
-            <ProductImage id={p.imageId} alt={p.imageAlt} title={p.title} />
-            {!p.available ? (
-              <span className="c-badge">{labels.soldOut}</span>
-            ) : p.compareAtMinor ? (
-              <span className="sf-sale">{labels.sale}</span>
-            ) : null}
-          </span>
-          <span className="sf-card-body">
-            <span className="sf-card-title">{p.title}</span>
-            <Price min={p.priceMin} max={p.priceMax} compareAt={p.compareAtMinor} currency={currency} locale={locale} wasLabel={labels.was} />
-          </span>
-        </a>
-      ))}
+      {products.map((p) => {
+        const href = `/s/${slug}/p/${p.handle}`;
+        const off = p.compareAtMinor ? Math.round((1 - p.priceMin / p.compareAtMinor) * 100) : 0;
+        return (
+          <div key={p.id} className="sf-card">
+            <a className="sf-card-img" href={href} tabIndex={-1} aria-hidden="true">
+              <ProductImage id={p.imageId} alt="" title={p.title} />
+              {!p.available ? <span className="c-badge">{labels.soldOut}</span> : off > 0 ? <span className="sf-sale">{labels.off(off)}</span> : null}
+            </a>
+            <span className="sf-card-body">
+              <a className="sf-card-title" href={href}>
+                {p.title}
+              </a>
+              <span className="sf-card-price">
+                <Price min={p.priceMin} max={p.priceMax} compareAt={p.compareAtMinor} currency={currency} locale={locale} wasLabel={labels.was} />
+                {off > 0 && <span className="sf-card-off">({labels.off(off)})</span>}
+              </span>
+            </span>
+            {p.quickAddVariantId ? (
+              <QuickAdd slug={slug} item={{ variantId: p.quickAddVariantId, title: p.title, handle: p.handle, imageId: p.imageId, priceMinor: p.priceMin }} labels={{ add: labels.add, added: labels.added }} />
+            ) : (
+              <a className="sf-btn sf-btn-block sf-btn-ghost sf-card-add" href={href}>
+                {p.available ? labels.options : labels.soldOut}
+              </a>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -117,8 +141,16 @@ export function ShopFooter({
 }
 
 /** Product card labels in the shopper's language. */
-export function gridLabels(t: (key: "card.soldOut" | "card.sale" | "price.was") => string): GridLabels {
-  return { soldOut: t("card.soldOut"), sale: t("card.sale"), was: t("price.was") };
+export function gridLabels(t: (key: MessageKey, vars?: Record<string, string | number>) => string): GridLabels {
+  return {
+    soldOut: t("card.soldOut"),
+    sale: t("card.sale"),
+    was: t("price.was"),
+    add: t("product.add"),
+    added: t("card.added"),
+    options: t("card.options"),
+    off: (n) => t("card.off", { n }),
+  };
 }
 
 /** The locale for formatting money and dates: the shop's language, in its country. */

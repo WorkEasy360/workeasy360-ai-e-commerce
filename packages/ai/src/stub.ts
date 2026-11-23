@@ -11,7 +11,7 @@ export function stubProvider(): JsonCompletionProvider {
     name: "stub",
     model: "stub-1",
     complete(request: CompletionRequest) {
-      if (request.system.startsWith("# Workeasy AI Commerce assistant")) return Promise.resolve(stubAssistant(request));
+      if (request.system.startsWith("# WorkEasy Commerce assistant")) return Promise.resolve(stubAssistant(request));
       const prompt = request.messages[0]?.content ?? "";
       const data = (() => {
         const m = /<data>\n([\s\S]*?)\n<\/data>/.exec(prompt);

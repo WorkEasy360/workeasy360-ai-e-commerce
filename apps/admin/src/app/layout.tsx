@@ -7,7 +7,7 @@ import { adminStyles, themeInitScript, tokens } from "@workeasy/ui";
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--we-font-inter" });
 
 export const metadata: Metadata = {
-  title: { default: "Workeasy AI Commerce", template: "%s · Workeasy AI Commerce" },
+  title: { default: "WorkEasy Commerce", template: "%s · WorkEasy Commerce" },
   description: "Sell products with a complete storefront, checkout and order management.",
 };
 

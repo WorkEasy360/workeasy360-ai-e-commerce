@@ -166,7 +166,7 @@ export function Notifications({ storeId, base, can }: { storeId: string; base: s
     ]);
     const list: Notice[] = [];
     if (orders?.counts.unpaid)
-      list.push({ key: "unpaid", tone: "warning", href: `${base}/orders`, title: plural(orders.counts.unpaid, "order awaiting payment", "orders awaiting payment"), detail: "Mark chat and offline orders as paid when the money arrives." });
+      list.push({ key: "unpaid", tone: "warning", href: `${base}/orders`, title: plural(orders.counts.unpaid, "order awaiting payment", "orders awaiting payment"), detail: "Mark UPI, bank transfer and cash orders paid once the money arrives." });
     if (orders?.counts.unfulfilled)
       list.push({ key: "unfulfilled", tone: "info", href: `${base}/orders`, title: plural(orders.counts.unfulfilled, "order to fulfil", "orders to fulfil"), detail: "Pack, ship and add tracking." });
     if (reviews?.counts.pending)

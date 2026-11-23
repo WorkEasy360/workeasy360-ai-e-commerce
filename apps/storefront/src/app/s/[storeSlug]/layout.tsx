@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { themeCssVars } from "@workeasy/commerce";
 import type { CSSProperties, ReactNode } from "react";
-import { ShopHeader } from "../../../components/header";
+import { ShopHeader, ShopTabBar } from "../../../components/header";
 import { PageTracker } from "../../../components/page-tracker";
 import { ShopFooter } from "../../../components/shop";
 import { I18nProvider } from "../../../components/i18n";
@@ -41,6 +41,7 @@ export default async function ShopLayout({ params, children }: { params: Promise
       />
       <main className="sf-main">{children}</main>
       <ShopFooter name={store.name} text={theme.footer.text} labels={{ footer: t("footer.label"), powered: t("footer.powered") }} links={theme.footer.links.map((l) => ({ label: l.label, href: l.href.startsWith("/") ? `${base}${l.href === "/" ? "" : l.href}` : l.href }))} />
+      <ShopTabBar slug={store.slug} />
       <PageTracker slug={store.slug} />
     </div>
     </I18nProvider>
