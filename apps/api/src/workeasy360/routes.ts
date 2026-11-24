@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import express, { Router, type Response } from "express";
+import { rateLimit } from "express-rate-limit";
 import { identityRepo, workeasy360Repo, type Db } from "@workeasy/database";
 import type { Logger } from "@workeasy/observability";
 import { clearCookie, parseCookies, serializeCookie } from "../http/cookies.js";
 import { requestIdOf, requestLog } from "../http/request-context.js";
-import { createAttemptLimiter } from "../identity/passwords.js";
 import { Workeasy360Error } from "./client.js";
 import type { Workeasy360Runtime } from "./runtime.js";
 
@@ -15,6 +15,10 @@ const MAX_LOGOUT_TOKEN_LENGTH = 16 * 1024;
 const MAX_CODE_LENGTH = 2048;
 /** Sign-ins this server starts per minute, at most. */
 const MAX_STARTS_PER_MINUTE = 600;
+/** Callbacks a minute: each one ends a started flow, so a few more than starts. */
+const MAX_CALLBACKS_PER_MINUTE = 1200;
+/** Back-channel logout tokens a minute: one per sign-in WorkEasy360 ends here. */
+const MAX_LOGOUTS_PER_MINUTE = 1200;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Admin pages someone may be sent back to after signing in: a store's pages. */
 const STORE_PATH = /^\/s\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/[A-Za-z0-9/_-]{0,300})?$/i;
@@ -133,9 +137,22 @@ export function workeasy360Router(options: Workeasy360RouterOptions): Router {
   // `__Host-`: only this exact host can have set it, so a sibling domain cannot plant a flow (login CSRF).
   const flowCookie = secure ? "__Host-wec_w360_flow" : "wec_w360_flow";
   const flowCookiePath = secure ? "/" : "/auth/workeasy360";
-  // A ceiling on sign-ins started per minute by this server, which bounds the stored flows. The API sits behind
-  // the admin's proxy, so a per-address limit would count everyone as one address.
-  const starts = createAttemptLimiter(MAX_STARTS_PER_MINUTE, 60_000);
+  // Ceilings per minute for this server. The API sits behind the admin's proxy, so a per-address limit would
+  // count everyone as one address: each route has one shared budget instead. The start ceiling bounds the
+  // stored flows; the callback and back-channel ceilings bound token exchanges and signature checks.
+  const ceiling = (limit: number, refuse: (res: Response) => void) =>
+    rateLimit({
+      windowMs: 60_000,
+      limit,
+      keyGenerator: () => "all",
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      // One shared key, never an address: the proxy and IP checks do not apply.
+      validate: false,
+      handler: (_req, res) => refuse(res),
+    });
+  const signInCeiling = (limit: number, what: string) =>
+    ceiling(limit, (res) => fail(res, "rate_limited", `too many sign-ins ${what} this minute`));
 
   function fail(res: Response, code: SsoErrorCode, detail: string, reason?: string): void {
     requestLog(res, logger).warn({ code, detail }, "workeasy360 sign-in failed");
@@ -149,10 +166,8 @@ export function workeasy360Router(options: Workeasy360RouterOptions): Router {
     return typeof raw === "string" && STORE_PATH.test(raw) ? raw : undefined;
   }
 
-  router.get("/start", async (req, res) => {
+  router.get("/start", signInCeiling(MAX_STARTS_PER_MINUTE, "started"), async (req, res) => {
     res.set("Cache-Control", "no-store");
-    if (starts.blocked("all")) return fail(res, "rate_limited", "too many sign-ins started this minute");
-    starts.fail("all");
     const raw = typeof req.query.organization === "string" ? req.query.organization : "";
     // Only a UUID is forwarded; anything else is dropped and the provider shows its own chooser.
     const organizationId = UUID_PATTERN.test(raw) ? raw.toLowerCase() : undefined;
@@ -173,7 +188,7 @@ export function workeasy360Router(options: Workeasy360RouterOptions): Router {
     }
   });
 
-  router.get("/callback", async (req, res) => {
+  router.get("/callback", signInCeiling(MAX_CALLBACKS_PER_MINUTE, "completed"), async (req, res) => {
     res.set("Cache-Control", "no-store");
     // The flow is single use: taken (and its cookie dropped) before anything is checked.
     res.append("Set-Cookie", clearCookie(flowCookie, { path: flowCookiePath, secure }));
@@ -257,7 +272,11 @@ export function workeasy360Router(options: Workeasy360RouterOptions): Router {
     }
   });
 
-  router.post("/backchannel-logout", express.urlencoded({ extended: false, limit: "32kb" }), async (req, res) => {
+  const logoutCeiling = ceiling(MAX_LOGOUTS_PER_MINUTE, (res) => {
+    res.set("Cache-Control", "no-store");
+    res.status(429).json({ error: "temporarily_unavailable" });
+  });
+  router.post("/backchannel-logout", logoutCeiling, express.urlencoded({ extended: false, limit: "32kb" }), async (req, res) => {
     res.set("Cache-Control", "no-store");
     const log = requestLog(res, logger);
     const body = req.body as Record<string, unknown> | undefined;
