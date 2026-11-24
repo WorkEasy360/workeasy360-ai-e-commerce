@@ -7,6 +7,7 @@ import type { Express } from "express";
 import { sql } from "kysely";
 import type { Fetch } from "@workeasy/payments";
 import { createApp, type AppSettings } from "./app.js";
+import type { Workeasy360Runtime } from "./workeasy360/runtime.js";
 import type { ResolveTxt } from "./routes/team.js";
 
 /** Shared setup for API integration tests. Not part of the production bundle. */
@@ -70,6 +71,7 @@ export function buildTestApp(
   logger = createLogger({ service: "api-test", level: "silent" }),
   gatewayFetch: Fetch = unusedGatewayFetch,
   resolveTxt?: ResolveTxt,
+  workeasy360?: Workeasy360Runtime,
 ): Express {
   return createApp({
     logger,
@@ -83,6 +85,7 @@ export function buildTestApp(
     settings,
     readinessChecks: { database: () => sql`SELECT 1`.execute(db) },
     isDraining: () => false,
+    workeasy360,
   });
 }
 

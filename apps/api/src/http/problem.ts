@@ -11,6 +11,8 @@ export interface ProblemExtensions {
   errors?: FieldError[];
   /** Per-dependency status for readiness failures. */
   checks?: Record<string, string>;
+  /** WorkEasy360's entitlement reason, returned with WORKEASY360_ACCESS_ENDED. */
+  reason?: string;
 }
 
 /**

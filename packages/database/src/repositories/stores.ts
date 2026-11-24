@@ -67,6 +67,8 @@ export interface NewStoreInput {
   contactEmail: string | null;
   homeRegion: string;
   ownerId: string;
+  /** The WorkEasy360 organization that owns the new store (a WorkEasy360 session creating it). */
+  workeasy360OrganizationId?: string | undefined;
 }
 
 /** Self-serve store creation: the creator becomes its only owner. */
@@ -83,6 +85,7 @@ export async function createStore(trx: Trx, input: NewStoreInput): Promise<Store
       timezone: input.timezone,
       contact_email: input.contactEmail,
       home_region: input.homeRegion,
+      ...(input.workeasy360OrganizationId ? { workeasy360_organization_id: input.workeasy360OrganizationId } : {}),
     })
     .returningAll()
     .executeTakeFirstOrThrow();

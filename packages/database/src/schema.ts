@@ -26,6 +26,8 @@ export interface StoresTable {
   domain_token: string | null;
   domain_verified_at: Date | null;
   domain_checked_at: Date | null;
+  /** The WorkEasy360 organization that owns the store (migration 0017); null when not linked. */
+  workeasy360_organization_id: Generated<string | null>;
 }
 
 export interface UsersTable {
@@ -76,6 +78,14 @@ export interface AuthSessionsTable {
   expires_at: Date;
   revoked_at: Date | null;
   created_at: CreatedAt;
+  /** How the session was opened (migration 0017). */
+  provider: Generated<"local" | "workeasy360">;
+  w360_issuer: Generated<string | null>;
+  w360_subject: Generated<string | null>;
+  w360_sid: Generated<string | null>;
+  /** A WorkEasy360 session's one organization. */
+  w360_organization_id: Generated<string | null>;
+  id_token: Generated<string | null>;
 }
 
 export type ActorType = "user" | "system";

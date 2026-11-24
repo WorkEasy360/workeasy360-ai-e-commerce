@@ -14,6 +14,7 @@ import type { ResolveTxt } from "./routes/team.js";
 import { publicV1Router } from "./routes/public-v1.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import type { LaunchFeature } from "./contract/schemas.js";
+import type { Workeasy360Runtime } from "./workeasy360/runtime.js";
 
 /** JSON body cap for non-upload routes. */
 const JSON_BODY_LIMIT = "1mb";
@@ -60,6 +61,8 @@ export interface AppDependencies {
   readinessChecks: Record<string, ReadinessCheck>;
   /** True once shutdown has begun, so load balancers stop routing here. */
   isDraining: () => boolean;
+  /** WorkEasy360 Accounts sign-in for the admin (docs/workeasy360-sso.md); undefined when this deployment does not use it. */
+  workeasy360?: Workeasy360Runtime | undefined;
 }
 
 /** Maps body-parser failures to stable problem codes. */

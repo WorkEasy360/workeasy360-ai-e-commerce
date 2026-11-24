@@ -6,6 +6,7 @@ import { BrandMark, ChevronDownIcon, CloseIcon, ExternalIcon, EyeIcon, LogoutIco
 import { ThemeToggle } from "@workeasy/ui/theme-toggle";
 import { api, ApiError, setServerInfo, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
 import { moduleByKey, MODULES, sectionOf, SECTIONS, type AdminSection, type ModuleKey } from "../../../lib/modules";
+import { NoAccess } from "../../workeasy360";
 import { AssistantPanel } from "./assistant-panel";
 import { GlobalSearch, Notifications } from "./shell-tools";
 
@@ -34,6 +35,8 @@ type State =
   | { kind: "signed-out" }
   | { kind: "not-found" }
   | { kind: "error" }
+  /** WorkEasy360 says the organization's (or this person's) access ended; the session stays so they can sign out. */
+  | { kind: "access-ended"; reason: string | undefined; unverified: boolean }
   | { kind: "ready"; me: Me; detail: StoreResponse };
 
 function initials(name: string): string {
@@ -78,12 +81,33 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
         if (cancelled) return;
         if (err instanceof ApiError && err.problem.status === 401) setState({ kind: "signed-out" });
         else if (err instanceof ApiError && err.problem.status === 404) setState({ kind: "not-found" });
+        else if (err instanceof ApiError && (err.problem.code === "WORKEASY360_ACCESS_ENDED" || err.problem.code === "WORKEASY360_ACCESS_UNVERIFIED")) {
+          setState({ kind: "access-ended", reason: (err.problem as { reason?: string }).reason, unverified: err.problem.code === "WORKEASY360_ACCESS_UNVERIFIED" });
+        }
         else setState({ kind: "error" });
       });
     return () => {
       cancelled = true;
     };
   }, [storeId]);
+
+  if (state.kind === "access-ended") {
+    return (
+      <main className="c-center-page">
+        {state.unverified ? (
+          <div className="c-empty" style={{ maxWidth: 440 }} role="alert">
+            <h2>We can't confirm your access right now</h2>
+            <p>Workeasy AI Commerce cannot reach WorkEasy360 to confirm your organization's access. Try again in a few minutes.</p>
+            <a className="c-btn c-btn-brand" href={pathname}>
+              Try again
+            </a>
+          </div>
+        ) : (
+          <NoAccess reason={state.reason} signedIn />
+        )}
+      </main>
+    );
+  }
 
   if (state.kind === "signed-out" || state.kind === "not-found" || state.kind === "error") {
     const copy = {
@@ -258,6 +282,13 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
                     <LogoutIcon size={16} /> Sign out
                   </button>
                 </form>
+                {ready?.me.session?.workeasy360SignOut && (
+                  <form method="post" action="/auth/logout?workeasy360=1">
+                    <button type="submit">
+                      <LogoutIcon size={16} /> Sign out of WorkEasy360 too
+                    </button>
+                  </form>
+                )}
               </div>
             </details>
           )}

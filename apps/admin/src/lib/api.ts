@@ -71,6 +71,8 @@ export interface Me {
   stores: StoreSummary[];
   /** Where shops live, from the server's settings (not fixed when the admin was built). */
   storefrontOrigin: string;
+  /** How this session was opened; a WorkEasy360 session may also sign out of WorkEasy360. */
+  session?: { provider: "local" | "workeasy360"; workeasy360SignOut: boolean };
   /** Launch-gated features this server has turned on. */
   features: LaunchFeature[];
 }
