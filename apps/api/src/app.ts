@@ -13,6 +13,7 @@ import type { PaymentsDeps } from "./payments/gateways.js";
 import type { ResolveTxt } from "./routes/team.js";
 import { publicV1Router } from "./routes/public-v1.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import type { LaunchFeature } from "./contract/schemas.js";
 import type { Workeasy360Runtime } from "./workeasy360/runtime.js";
 
 /** JSON body cap for non-upload routes. */
@@ -37,6 +38,8 @@ export interface AppSettings {
   aiDailyLimit?: number;
   /** Assistant questions per store per day. */
   assistantDailyLimit?: number;
+  /** Launch-gated features that are on; anything missing is off. */
+  features?: readonly LaunchFeature[];
 }
 
 export interface AppDependencies {

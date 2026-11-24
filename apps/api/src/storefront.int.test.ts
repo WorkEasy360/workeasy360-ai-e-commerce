@@ -43,7 +43,6 @@ const checkout = {
   upiId: "teahouse@okhdfcbank",
   upiInstructions: "Send a screenshot after paying",
   whatsappNumber: "91 98765 43210",
-  telegramUsername: null,
   orderNoteEnabled: true,
 };
 
@@ -54,7 +53,7 @@ const order = (variantId: string, extra: Record<string, unknown> = {}) => ({
   phone: "+91 90000 00000",
   deliveryMethod: "delivery",
   address: { line1: "12 MG Road", city: "Pune", state: "MH", postalCode: "411001" },
-  paymentMethod: "whatsapp",
+  paymentMethod: "upi",
   ...extra,
 });
 
@@ -88,7 +87,8 @@ describe("browsing", () => {
   it("shows the shop, its checkout options and only products on sale", async () => {
     const home = await request(app).get(shop());
     expect(home.body.checkout).toEqual({
-      paymentMethods: ["whatsapp", "upi", "bank", "cod"],
+      // WhatsApp is for enquiries about an order, not a way to pay.
+      paymentMethods: ["upi", "bank", "cod"],
       card: null,
       delivery: { enabled: true, feeMinor: 5000, freeOverMinor: 100000 },
       pickup: { address: "Shop 4, FC Road, Pune" },
@@ -117,7 +117,8 @@ describe("checkout", () => {
   let token = "";
   let orderId = "";
 
-  it("places a WhatsApp order, takes stock, and gives the shopper a pre-filled chat link", async () => {
+  it("places a UPI order, takes stock, and offers a pre-filled WhatsApp enquiry link", async () => {
+    for (const method of ["whatsapp", "telegram"]) expect((await request(app).post(`${shop()}/orders`).send(order(ids.tea!, { paymentMethod: method }))).status).toBe(422);
     const placed = await request(app).post(`${shop()}/orders`).send(order(ids.tea!, { note: "Gift wrap please" }));
     expect(placed.status).toBe(201);
     token = placed.body.order.token;

@@ -26,6 +26,9 @@ export function SettingsFrame({ children }: { children: ReactNode }) {
   const tabs = [
     { href: base, label: "General", show: true },
     { href: `${base}/checkout`, label: "Checkout", show: true },
+    // Their own pages, listed here because they are part of Settings in the menu.
+    { href: `${ctx.base}/shipping`, label: "Delivery & pickup", show: ctx.can("shipping.manage") },
+    { href: `${ctx.base}/payments`, label: "Payments & tax", show: ctx.can("finances.read") },
     { href: `${base}/staff`, label: "Staff", show: ctx.can("members.manage") },
     { href: `${base}/domain`, label: "Domain", show: ctx.can("store.manage") },
     { href: `${base}/audit`, label: "Audit log", show: ctx.can("audit.read") },

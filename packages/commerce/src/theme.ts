@@ -85,7 +85,8 @@ export function defaultTheme(defaultLanguage = "en"): Theme {
   return {
     version: 1,
     // Green buttons (white text at 5:1) on navy panels: the WorkEasy palette, until the merchant picks theirs.
-    colors: { accent: "#15803D", dark: "#1B3040" },
+    // The WorkEasy360 Commerce greens: action green and a deep green for the category bar.
+    colors: { accent: "#15803D", dark: "#14532D" },
     font: "modern",
     buttons: "rounded",
     logoMediaId: null,

@@ -8,7 +8,7 @@ import { pay, type PaymentStart } from "../../../../lib/pay";
 import { useI18n } from "../../../../components/i18n";
 import { track } from "../../../../lib/track";
 import { useQuote } from "../../../../lib/quote";
-import type { CheckoutOptions, DeliveryMethod, PaymentMethod } from "../../../../lib/stores";
+import type { CheckoutOptions, CheckoutPaymentMethod, DeliveryMethod } from "../../../../lib/stores";
 
 
 interface Problem {
@@ -70,7 +70,7 @@ export function CheckoutForm({
     discountCode,
     email: /^\S+@\S+\.\S+$/.test(contact.email) ? contact.email : null,
   });
-  const [chosenPayment, setPayment] = useState<PaymentMethod | undefined>();
+  const [chosenPayment, setPayment] = useState<CheckoutPaymentMethod | undefined>();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -81,7 +81,7 @@ export function CheckoutForm({
   useEffect(() => {
     if (hasItems) track(slug, { type: "checkout_start" });
   }, [slug, hasItems]);
-  const copy = (m: PaymentMethod) => {
+  const copy = (m: CheckoutPaymentMethod) => {
     const key = m === "card" && checkout.card?.provider === "stripe" ? "stripe" : m;
     return { title: t(`pay.${key}.title`), text: t(`pay.${key}.text`) };
   };
@@ -413,18 +413,10 @@ export function CheckoutForm({
           )}
           <button
             type="submit"
-            className={`sf-btn sf-btn-block ${payment === "whatsapp" ? "sf-btn-wa" : payment === "telegram" ? "sf-btn-tg" : "sf-btn-brand"}`}
+            className="sf-btn sf-btn-block sf-btn-brand"
             disabled={busy || !delivery || !payment || !quote || undeliverable}
           >
-            {busy
-              ? t("checkout.placing")
-              : payment === "whatsapp"
-                ? t("checkout.toWhatsapp")
-                : payment === "telegram"
-                  ? t("checkout.toTelegram")
-                  : payment === "card"
-                    ? t("checkout.pay", { amount: sums ? money(sums.totalMinor) : "" }).trim()
-                    : t("checkout.place")}
+            {busy ? t("checkout.placing") : payment === "card" ? t("checkout.pay", { amount: sums ? money(sums.totalMinor) : "" }).trim() : t("checkout.place")}
           </button>
           <p className="c-hint" style={{ textAlign: "center" }}>
             {t("checkout.goesTo", { store: storeName })}

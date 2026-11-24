@@ -104,6 +104,7 @@ export function apiV1Router(deps: AppDependencies): Router {
       })),
       storefrontOrigin: settings.storefrontOrigin,
       session: { provider: session.provider, workeasy360SignOut: session.provider === "workeasy360" },
+      features: [...(settings.features ?? [])],
     };
     res.json(body);
   });

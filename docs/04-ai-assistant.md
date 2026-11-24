@@ -47,9 +47,10 @@ Its rules carry over unchanged: store isolation first, real data over guesses, c
 
 ## Actions (confirmed by the member)
 
+The assistant never records a payment. Asked to mark an order paid, it links to the order so a member can check the money arrived and verify it there (development note v2, 10.4).
+
 | Action | Allowed when | Endpoint |
 |---|---|---|
-| `mark_order_paid` | Open order, payment pending, paid by WhatsApp, Telegram, UPI, bank transfer or cash on delivery. **Never card orders:** only the gateway confirms those | `POST …/orders/:id/paid` |
 | `mark_order_fulfilled` | Open order with items left to fulfil | `POST …/orders/:id/fulfilled` |
 | `cancel_order` | Open order. A paid card order must be refunded first | `POST …/orders/:id/cancel` |
 | `create_product` | Title and price given. Physical, one price, optional "was" price, stock, SKU, tags and description. Stays a draft unless the member asks for it live. Checked with the same rules as the product form | `POST …/products` |

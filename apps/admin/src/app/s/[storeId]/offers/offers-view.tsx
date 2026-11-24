@@ -5,7 +5,7 @@ import { formatMoney, parseMoney, toDecimalString } from "@workeasy/commerce";
 import { Badge, EmptyState, OfferIcon, Page, PageHeader, PlusIcon } from "@workeasy/ui/react";
 import { Dialog } from "@workeasy/ui/client";
 import { ProductPicker } from "../../../../components/product-picker";
-import { api, ApiError, errorMessage } from "../../../../lib/api";
+import { api, ApiError, errorMessage, featureOn } from "../../../../lib/api";
 import type { ProductList, ProductSummary } from "../../../../lib/catalog";
 import { moduleByKey } from "../../../../lib/modules";
 import { useStore } from "../store-shell";
@@ -351,7 +351,8 @@ function OfferDialog({ storeId, currency, locale, discount, onDone, onClose }: {
             <option value="percentage">Percentage off</option>
             <option value="fixed">Amount off</option>
             <option value="free_shipping">Free shipping</option>
-            <option value="buy_x_get_y">Buy X, get Y</option>
+            {/* Hidden for new offers until returns and stacking are proven; a saved one can still be edited or paused. */}
+            {(featureOn("buy_x_get_y") || discount?.type === "buy_x_get_y") && <option value="buy_x_get_y">Buy X, get Y</option>}
           </select>
         </div>
         {(form.type === "percentage" || form.type === "fixed") && (

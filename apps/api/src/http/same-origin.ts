@@ -27,7 +27,7 @@ export function requireSameOrigin(allowedOrigin: string): RequestHandler {
       }
     }
     if (actual !== expected) {
-      sendProblem(res, 403, "CROSS_ORIGIN_REQUEST", "This request must come from the Workeasy AI Commerce admin");
+      sendProblem(res, 403, "CROSS_ORIGIN_REQUEST", "This request must come from the WorkEasy Commerce admin");
       return;
     }
     next();

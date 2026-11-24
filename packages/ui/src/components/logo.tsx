@@ -1,7 +1,7 @@
 import { brand } from "../tokens";
 
 /** The product name, as shown inside the product. */
-export const PRODUCT_NAME = "Workeasy AI Commerce";
+export const PRODUCT_NAME = "WorkEasy Commerce";
 
 /** The logo outline, traced from the artwork in packages/ui/assets/logo.jpg (a 100-unit square). */
 export const BRAND_MARK_PATH =
@@ -21,13 +21,25 @@ export function BrandMark({ size = 32, title }: { size?: number; title?: string 
   );
 }
 
-/** Mark plus "Workeasy" and the product line, for sign-in and the sidebar. */
-export function BrandLockup({ product = "AI Commerce", size = 34, className }: { product?: string; size?: number; className?: string }) {
+/** The "WorkEasy360" wordmark beside the mark, as in the Commerce designs: "360" in green. */
+export function Wordmark({ size = 34, className }: { size?: number; className?: string }) {
+  return (
+    <span className={className ? `c-wordmark ${className}` : "c-wordmark"}>
+      <BrandMark size={size} />
+      <span>
+        WorkEasy<b>360</b>
+      </span>
+    </span>
+  );
+}
+
+/** Mark plus "WorkEasy" and the product line, for compact spots. */
+export function BrandLockup({ product = "Commerce", size = 34, className }: { product?: string; size?: number; className?: string }) {
   return (
     <span className={className} style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       <BrandMark size={size} />
       <span style={{ lineHeight: 1.1 }}>
-        <strong style={{ display: "block" }}>Workeasy</strong>
+        <strong style={{ display: "block" }}>WorkEasy</strong>
         <small>{product}</small>
       </span>
     </span>

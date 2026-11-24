@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
+import { EyeIcon, LockIcon, MailIcon, StoreIcon, Wordmark } from "@workeasy/ui/react";
 import { api, errorMessage } from "../lib/api";
 import { SSO_ERROR_MESSAGES } from "./workeasy360";
 
@@ -31,6 +32,7 @@ export function SignIn({ signInFailed, returnTo, ssoError }: { signInFailed: boo
   );
   const [methods, setMethods] = useState<Methods>({ password: true, sso: false });
   const { sso, workeasy360 } = methods;
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     api<Methods>("/auth/methods")
@@ -83,11 +85,15 @@ export function SignIn({ signInFailed, returnTo, ssoError }: { signInFailed: boo
     );
   }
   return (
-    <form className="c-card c-form" onSubmit={submit}>
-      <div>
-        <h1 style={{ margin: 0, fontSize: "var(--we-font-size-xl)" }}>{signingUp ? "Start selling online" : "Sign in"}</h1>
-        <p className="c-subtitle" style={{ marginTop: 4 }}>
-          {signingUp ? "Create your account, then set up your store in a minute." : "Welcome back. Sign in to manage your stores."}
+    <form className="c-card c-form" onSubmit={submit} style={{ gap: 18 }}>
+      <div className="c-auth-wordmark">
+        <Wordmark size={36} />
+        <span className="c-brand-badge">
+          <StoreIcon size={20} /> Commerce
+        </span>
+        <h1 style={{ margin: "6px 0 0", fontSize: 30, fontWeight: 800, letterSpacing: "-.02em" }}>{signingUp ? "Create Commerce Account" : "Commerce Login"}</h1>
+        <p className="c-subtitle" style={{ margin: 0 }}>
+          {signingUp ? "Create your account, then set up your store in a minute." : "Manage your store, products, orders and customers."}
         </p>
       </div>
       {!signingUp && workeasy360Button}
@@ -102,26 +108,36 @@ export function SignIn({ signInFailed, returnTo, ssoError }: { signInFailed: boo
       )}
       <div className="c-field">
         <label className="c-label" htmlFor={ids.email}>
-          Email
+          Email Address
         </label>
-        <input id={ids.email} className="c-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} autoComplete="email" />
+        <span className="c-input-icon">
+          <MailIcon size={20} />
+          <input id={ids.email} className="c-input" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} autoComplete="email" />
+        </span>
       </div>
       <div className="c-field">
         <label className="c-label" htmlFor={ids.password}>
           Password
         </label>
-        <input
-          id={ids.password}
-          className="c-input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={signingUp ? 10 : 1}
-          maxLength={200}
-          autoComplete={signingUp ? "new-password" : "current-password"}
-          aria-describedby={signingUp ? `${ids.password}-hint` : undefined}
-        />
+        <span className="c-input-icon c-password">
+          <LockIcon size={20} />
+          <input
+            id={ids.password}
+            className="c-input"
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={signingUp ? 10 : 1}
+            maxLength={200}
+            autoComplete={signingUp ? "new-password" : "current-password"}
+            aria-describedby={signingUp ? `${ids.password}-hint` : undefined}
+          />
+          <button type="button" className="c-btn c-btn-ghost c-btn-icon" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+            <EyeIcon size={20} />
+          </button>
+        </span>
         {signingUp && (
           <p id={`${ids.password}-hint`} className="c-hint">
             At least 10 characters.
@@ -133,17 +149,15 @@ export function SignIn({ signInFailed, returnTo, ssoError }: { signInFailed: boo
           {error}
         </p>
       )}
-      <button type="submit" className="c-btn c-btn-brand" disabled={busy || email === "" || password === ""}>
-        {busy ? (signingUp ? "Creating account…" : "Signing in…") : signingUp ? "Create account" : "Sign in"}
+      <button type="submit" className="c-btn c-btn-brand c-btn-lg" disabled={busy || email === "" || password === ""}>
+        {busy ? (signingUp ? "Creating account…" : "Logging in…") : signingUp ? "Create Commerce Account" : "Log In to Commerce"}
       </button>
-      <p style={{ margin: 0, fontSize: 14 }}>
-        {signingUp ? "Already have an account? " : "New to Workeasy AI Commerce? "}
-        <button type="button" className="c-link-btn" onClick={() => switchTo(signingUp ? "sign-in" : "sign-up")}>
-          {signingUp ? "Sign in" : "Create an account"}
-        </button>
-      </p>
+      <span className="c-auth-or">OR</span>
+      <button type="button" className="c-btn c-btn-outline-brand c-btn-lg" onClick={() => switchTo(signingUp ? "sign-in" : "sign-up")}>
+        {signingUp ? "I already have an account" : "Create Commerce Account"}
+      </button>
       {sso && (
-        <p style={{ margin: 0, fontSize: 14 }}>
+        <p style={{ margin: 0, fontSize: 14, textAlign: "center" }}>
           <a href={`/auth/login${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}>Sign in with single sign-on</a>
         </p>
       )}

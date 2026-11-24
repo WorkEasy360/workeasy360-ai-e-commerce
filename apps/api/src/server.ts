@@ -108,6 +108,7 @@ const app = createApp({
     aiProvider: config.AI_PROVIDER,
     aiDailyLimit: config.AI_DAILY_LIMIT,
     assistantDailyLimit: config.ASSISTANT_DAILY_LIMIT,
+    features: config.COMMERCE_FEATURES,
     ...(config.API_PUBLIC_URL ? { apiOrigin: new URL(config.API_PUBLIC_URL).origin } : {}),
   },
 });

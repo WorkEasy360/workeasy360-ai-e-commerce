@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chatOrderMessage, deliveryOptions, telegramLink, totals, whatsappLink, type DeliverySettings } from "./checkout";
+import { chatOrderMessage, deliveryOptions, totals, whatsappLink, type DeliverySettings } from "./checkout";
 
 const settings: DeliverySettings = { deliveryEnabled: true, deliveryFeeMinor: 5000, freeDeliveryOverMinor: 99900, pickupEnabled: true };
 const tea = { productType: "physical" as const, unitPriceMinor: 34900, quantity: 2 };
@@ -38,7 +38,7 @@ describe("chat orders", () => {
     });
     expect(message).toBe(
       [
-        "Hi Chai & Co! I'd like to place order #1001:",
+        "Hi Chai & Co! A question about my order #1001:",
         "",
         "• 2 × Masala Chai (250 g): ₹698",
         "• 1 × Tasting: ₹999, for Sat 25 Oct, 11:00",
@@ -55,6 +55,5 @@ describe("chat orders", () => {
       ].join("\n"),
     );
     expect(whatsappLink("919876543210", "Hi & bye")).toBe("https://wa.me/919876543210?text=Hi%20%26%20bye");
-    expect(telegramLink("@chaico")).toBe("https://t.me/chaico");
   });
 });

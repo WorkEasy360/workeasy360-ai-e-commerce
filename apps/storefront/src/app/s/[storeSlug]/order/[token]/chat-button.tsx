@@ -5,13 +5,12 @@ import { ChatIcon, CopyIcon } from "@workeasy/ui/react";
 import { useI18n } from "../../../../../components/i18n";
 
 /**
- * Sends a chat order. WhatsApp opens with the message filled in; Telegram
- * can't pre-fill a chat, so the message is copied for pasting first.
+ * Messages the shop about a placed order on WhatsApp, with the order details
+ * filled in. It's an enquiry: sending it doesn't pay for or change the order.
  */
-export function ChatButton({ chat, storeName }: { chat: { channel: "whatsapp" | "telegram"; url: string; message: string }; storeName: string }) {
+export function ChatButton({ chat, storeName }: { chat: { channel: "whatsapp"; url: string; message: string }; storeName: string }) {
   const [copied, setCopied] = useState(false);
   const { t } = useI18n();
-  const telegram = chat.channel === "telegram";
 
   async function copy() {
     try {
@@ -25,21 +24,13 @@ export function ChatButton({ chat, storeName }: { chat: { channel: "whatsapp" | 
   return (
     <section className="sf-step" aria-labelledby="chat-h" style={{ textAlign: "center", justifyItems: "center" }}>
       <h2 id="chat-h" style={{ justifyContent: "center" }}>
-        {t("chat.title", { store: storeName })}
+        {t("chat.title")}
       </h2>
       <p className="c-muted" style={{ margin: 0, maxWidth: "52ch" }}>
-        {telegram ? t("chat.telegramHint") : t("chat.whatsappHint")}
+        {t("chat.whatsappHint", { store: storeName })}
       </p>
-      <a
-        className={`sf-btn ${telegram ? "sf-btn-tg" : "sf-btn-wa"}`}
-        href={chat.url}
-        target="_blank"
-        rel="noreferrer"
-        onClick={() => {
-          if (telegram) void copy();
-        }}
-      >
-        <ChatIcon size={18} /> {telegram ? t("chat.telegramButton") : t("chat.whatsappButton")}
+      <a className="sf-btn sf-btn-wa" href={chat.url} target="_blank" rel="noreferrer">
+        <ChatIcon size={18} /> {t("chat.whatsappButton")}
       </a>
       <details style={{ width: "100%", textAlign: "left" }}>
         <summary style={{ cursor: "pointer", fontSize: 14 }}>{t("chat.see")}</summary>

@@ -54,6 +54,8 @@ export interface CsvVariant {
 }
 
 export interface CsvProduct {
+  /** The spreadsheet row the product starts on, for imported products. */
+  row?: number;
   handle: string;
   title: string;
   type: ProductType;
@@ -228,6 +230,7 @@ export function parseProductCsv(text: string, currency: string): { products: Csv
 
     if (problems.length === before) {
       products.push({
+        row: first.n,
         handle,
         title,
         type,

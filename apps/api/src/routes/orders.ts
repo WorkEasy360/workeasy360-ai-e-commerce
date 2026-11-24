@@ -64,8 +64,8 @@ export function ordersRoutes(router: Router, _deps: AppDependencies, { withPermi
       res,
       await withPermission(res, req.params.storeId, "settings.manage", async (trx) => {
         const store = (await storesRepo.getStore(trx))!;
-        if (!s.codEnabled && !s.bankEnabled && !s.upiEnabled && !s.whatsappNumber && !s.telegramUsername && !(await moneyRepo.cardGateway(trx, store.currency))) {
-          return invalid("codEnabled", "Turn on at least one way to pay or order");
+        if (!s.codEnabled && !s.bankEnabled && !s.upiEnabled && !(await moneyRepo.cardGateway(trx, store.currency))) {
+          return invalid("codEnabled", "Turn on at least one way to pay");
         }
         const saved = await checkoutRepo.saveCheckoutSettings(trx, req.params.storeId, body.data);
         await auditRepo.appendAudit(trx, {

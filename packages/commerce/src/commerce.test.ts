@@ -142,7 +142,8 @@ describe("product CSV", () => {
 
   it("round-trips an export through import unchanged", () => {
     const csv = productsToCsv([tee, ebook], "INR");
-    expect(parseProductCsv(csv, "INR")).toEqual({ products: [tee, ebook], problems: [] });
+    // Imported products also say which row they start on.
+    expect(parseProductCsv(csv, "INR")).toEqual({ products: [{ ...tee, row: 2 }, { ...ebook, row: 4 }], problems: [] });
   });
 
   it("applies defaults and reads product fields from the first row only", () => {

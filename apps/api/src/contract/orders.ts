@@ -69,7 +69,8 @@ export const PlaceOrderBodySchema = z
       .transform((v) => (v ? v : null)),
     deliveryMethod: z.enum(["delivery", "pickup", "none"]),
     address: Address.nullable().optional(),
-    paymentMethod: z.enum(["cod", "bank", "upi", "whatsapp", "telegram", "card"]),
+    // WhatsApp and Telegram are no longer payment methods; old orders keep them, new ones can't use them.
+    paymentMethod: z.enum(["cod", "bank", "upi", "card"]),
     note: OptionalText(1000),
     /** The shopper's saved checkout, so it stops counting as abandoned. */
     checkoutId: Uuid.optional(),
@@ -78,7 +79,7 @@ export const PlaceOrderBodySchema = z
   })
   .superRefine((o, ctx) => {
     if (o.deliveryMethod === "delivery" && !o.address) ctx.addIssue({ code: "custom", path: ["address"], message: "Enter a delivery address" });
-    if ((o.paymentMethod === "whatsapp" || o.paymentMethod === "cod") && !o.phone) {
+    if (o.paymentMethod === "cod" && !o.phone) {
       ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter a phone number so the shop can reach you" });
     }
   });
@@ -108,14 +109,6 @@ export const CheckoutSettingsBodySchema = z
       .string()
       .transform((v) => v.replace(/[\s()+-]/g, ""))
       .pipe(z.string().regex(/^([1-9][0-9]{7,14})?$/, "Enter the number with country code, such as 91 98765 43210"))
-      .nullable()
-      .optional()
-      .transform((v) => (v ? v : null)),
-    telegramUsername: z
-      .string()
-      .trim()
-      .transform((v) => v.replace(/^@/, ""))
-      .pipe(z.string().regex(/^([A-Za-z][A-Za-z0-9_]{4,31})?$/, "Enter a Telegram username of 5 to 32 letters, numbers or underscores"))
       .nullable()
       .optional()
       .transform((v) => (v ? v : null)),

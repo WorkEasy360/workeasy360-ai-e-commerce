@@ -30,7 +30,6 @@ export {
   deliveryCharge,
   deliveryOptions,
   needsDelivery,
-  telegramLink,
   totals,
   whatsappLink,
   type ChatOrder,

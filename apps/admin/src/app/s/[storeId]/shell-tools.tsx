@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { BellIcon, SearchIcon, SettingsIcon, StoreIcon } from "@workeasy/ui/react";
-import { api } from "../../../lib/api";
+import { api, featureOn, type LaunchFeature } from "../../../lib/api";
 import { MODULES } from "../../../lib/modules";
 
 interface Destination {
@@ -17,14 +17,12 @@ interface Destination {
 }
 
 /** Pages inside a module worth jumping to directly, each with the permission that opens it. */
-const SUBPAGES: ReadonlyArray<{ path: string; label: string; where: string; permission: string; keywords?: string }> = [
+const SUBPAGES: ReadonlyArray<{ path: string; label: string; where: string; permission: string; keywords?: string; feature?: LaunchFeature }> = [
   { path: "/products/new", label: "Add product", where: "Products", permission: "products.manage", keywords: "new create" },
   { path: "/collections/new", label: "Create collection", where: "Collections", permission: "products.manage", keywords: "new" },
-  { path: "/orders/customers", label: "Customers", where: "Orders", permission: "customers.read", keywords: "buyers people" },
   { path: "/orders/abandoned", label: "Abandoned checkouts", where: "Orders", permission: "orders.read", keywords: "carts" },
-  { path: "/orders/bookings", label: "Bookings", where: "Orders", permission: "orders.read", keywords: "calendar appointments slots" },
-  { path: "/design/pages", label: "Content pages", where: "Store Design", permission: "design.manage", keywords: "about privacy terms policy" },
-  { path: "/settings/checkout", label: "Checkout settings", where: "Settings", permission: "settings.manage", keywords: "whatsapp telegram pickup" },
+  { path: "/orders/bookings", label: "Bookings", where: "Orders", permission: "orders.read", keywords: "calendar appointments slots", feature: "services" },
+  { path: "/settings/checkout", label: "Checkout settings", where: "Settings", permission: "settings.manage", keywords: "whatsapp enquiries pickup cod upi bank" },
   { path: "/settings/staff", label: "Staff and invitations", where: "Settings", permission: "members.manage", keywords: "team members roles invite" },
   { path: "/settings/domain", label: "Custom domain", where: "Settings", permission: "store.manage", keywords: "dns url address" },
   { path: "/settings/audit", label: "Audit log", where: "Settings", permission: "audit.read", keywords: "history activity" },
@@ -43,7 +41,7 @@ export function GlobalSearch({ base, can, stores }: { base: string; can: (permis
 
   const all: Destination[] = [
     ...MODULES.filter((m) => !m.permission || can(m.permission)).map((m) => ({ key: m.key, label: m.label, href: `${base}${m.path}`, where: m.group, icon: m.icon(16), keywords: m.summary })),
-    ...SUBPAGES.filter((p) => can(p.permission)).map((p) => ({ key: p.path, label: p.label, href: `${base}${p.path}`, where: p.where, icon: <SettingsIcon size={16} />, keywords: p.keywords })),
+    ...SUBPAGES.filter((p) => can(p.permission) && (!p.feature || featureOn(p.feature))).map((p) => ({ key: p.path, label: p.label, href: `${base}${p.path}`, where: p.where, icon: <SettingsIcon size={16} />, keywords: p.keywords })),
     ...stores.map((s) => ({ key: s.id, label: s.name, href: `/s/${s.id}`, where: "Switch store", icon: <StoreIcon size={16} /> })),
   ];
   const q = query.trim().toLowerCase();
@@ -168,7 +166,7 @@ export function Notifications({ storeId, base, can }: { storeId: string; base: s
     ]);
     const list: Notice[] = [];
     if (orders?.counts.unpaid)
-      list.push({ key: "unpaid", tone: "warning", href: `${base}/orders`, title: plural(orders.counts.unpaid, "order awaiting payment", "orders awaiting payment"), detail: "Mark chat and offline orders as paid when the money arrives." });
+      list.push({ key: "unpaid", tone: "warning", href: `${base}/orders`, title: plural(orders.counts.unpaid, "order awaiting payment", "orders awaiting payment"), detail: "Mark UPI, bank transfer and cash orders paid once the money arrives." });
     if (orders?.counts.unfulfilled)
       list.push({ key: "unfulfilled", tone: "info", href: `${base}/orders`, title: plural(orders.counts.unfulfilled, "order to fulfil", "orders to fulfil"), detail: "Pack, ship and add tracking." });
     if (reviews?.counts.pending)

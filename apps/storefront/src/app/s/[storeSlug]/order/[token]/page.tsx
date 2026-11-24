@@ -30,7 +30,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const { t, tn, locale } = await shopI18n(shop);
   const method = t(`method.${order.paymentMethod}` as MessageKey);
   const money = (m: number) => formatMoney(m, order.currency, locale);
-  const chatPending = order.chat !== null && order.paymentStatus === "pending";
+  // Older orders placed "on WhatsApp/Telegram" before those stopped being ways to pay.
+  const chatPending = (order.paymentMethod === "whatsapp" || order.paymentMethod === "telegram") && order.paymentStatus === "pending";
   const cardPending = order.paymentMethod === "card" && order.paymentStatus === "pending" && order.status === "open";
   const shipped = order.shipments.length > 0;
 
@@ -63,7 +64,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <p>{status.text}</p>
       </div>
 
-      {order.chat && order.paymentStatus === "pending" && order.status === "open" && <ChatButton chat={order.chat} storeName={shop.store.name} />}
+      {order.chat && <ChatButton chat={order.chat} storeName={shop.store.name} />}
 
       {cardPending && query.paid !== "stripe" && <PayButton slug={shop.store.slug} token={token} amount={money(order.totalMinor)} payBy={order.payBy} provider={shop.checkout.card?.provider ?? null} />}
 

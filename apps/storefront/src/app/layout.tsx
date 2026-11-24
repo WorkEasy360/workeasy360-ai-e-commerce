@@ -5,7 +5,7 @@ import { storefrontStyles } from "./storefront-css";
 
 export const metadata: Metadata = {
   title: { default: "Shop", template: "%s" },
-  description: "An online store powered by Workeasy AI Commerce.",
+  description: "An online store powered by WorkEasy Commerce.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -4,7 +4,7 @@ import { auditRepo, mediaRepo, productsRepo, storesRepo, type Product, type Prod
 import type { AppDependencies } from "../app.js";
 import { BulkProductsBodySchema, ImportQuerySchema, ProductBodySchema, ProductListQuerySchema, type ProductBody } from "../contract/catalog.js";
 import { problems } from "../http/problem.js";
-import { actorOf, decodeCursor, encodeCursor, invalid, issuesToErrors, respond, UUID_PATTERN, type Failure, type StoreAccess, type Trx } from "./support.js";
+import { actorOf, decodeCursor, encodeCursor, featureOn, invalid, NOT_YET, issuesToErrors, respond, UUID_PATTERN, type Failure, type StoreAccess, type Trx } from "./support.js";
 
 /** Product shapes on the wire: dates as ISO strings. */
 export function productJson(p: Product) {
@@ -60,7 +60,8 @@ function toInput(body: ProductBody, handle: string): ProductInput {
   };
 }
 
-export function productsRoutes(router: Router, _deps: AppDependencies, { withPermission }: StoreAccess): void {
+export function productsRoutes(router: Router, { settings }: AppDependencies, { withPermission }: StoreAccess): void {
+  const servicesOn = featureOn(settings, "services");
   router.get("/stores/:storeId/products", async (req, res) => {
     const query = ProductListQuerySchema.safeParse(req.query);
     if (!query.success) {
@@ -107,6 +108,7 @@ export function productsRoutes(router: Router, _deps: AppDependencies, { withPer
       respond(
         res,
         await withPermission(res, req.params.storeId, "products.manage", async (trx, _m, userId) => {
+          if (body.data.type === "service" && !servicesOn) return invalid("type", NOT_YET.services);
           const problem = await linkProblems(trx, body.data);
           if (problem) return problem;
           const handle = explicitHandle ? body.data.handle : uniqueHandle(body.data.handle || "product", await productsRepo.handlesLike(trx, body.data.handle || "product"));
@@ -167,6 +169,18 @@ export function productsRoutes(router: Router, _deps: AppDependencies, { withPer
         const store = (await storesRepo.getStore(trx))!;
         const parsed = parseProductCsv(text, store.currency);
         const existing = await productsRepo.idsByHandle(trx, parsed.products.map((p) => p.handle));
+        if (!servicesOn) {
+          // The same rule as the product form: no new services while they're off.
+          const blocked = new Set<string>();
+          for (const p of parsed.products) {
+            if (p.type !== "service") continue;
+            const id = existing.get(p.handle);
+            if (id && (await productsRepo.getProduct(trx, id))?.type === "service") continue;
+            blocked.add(p.handle);
+            parsed.problems.push({ row: p.row ?? 1, message: NOT_YET.services });
+          }
+          parsed.products = parsed.products.filter((p) => !blocked.has(p.handle));
+        }
         const preview = [];
         for (const p of parsed.products) {
           const id = existing.get(p.handle);
@@ -262,6 +276,8 @@ export function productsRoutes(router: Router, _deps: AppDependencies, { withPer
         await withPermission(res, req.params.storeId, "products.manage", async (trx, _m, userId) => {
           const before = await productsRepo.getProduct(trx, req.params.productId);
           if (!before) return { kind: "not_found" };
+          // Existing services stay editable; nothing new becomes one while services are off.
+          if (body.data.type === "service" && before.type !== "service" && !servicesOn) return invalid("type", NOT_YET.services);
           const problem = await linkProblems(trx, body.data);
           if (problem) return problem;
           const handle = body.data.handle || handleize(body.data.title) || before.handle;

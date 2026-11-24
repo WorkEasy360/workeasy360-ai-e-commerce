@@ -128,7 +128,7 @@ const TOOLS: Record<string, (trx: Trx, args: Record<string, unknown>, ctx: { sto
       result: {
         // Provider, mode and status only: keys and hints never leave the server.
         cardGateways: accounts.map((a) => ({ provider: a.provider, mode: a.mode, enabled: a.enabled })),
-        whatsapp: Boolean(c.whatsappNumber), telegram: Boolean(c.telegramUsername), upi: c.upiEnabled, bankTransfer: c.bankEnabled, cashOnDelivery: c.codEnabled, delivery: c.deliveryEnabled, pickup: c.pickupEnabled,
+        whatsappEnquiries: Boolean(c.whatsappNumber), upi: c.upiEnabled, bankTransfer: c.bankEnabled, cashOnDelivery: c.codEnabled, delivery: c.deliveryEnabled, pickup: c.pickupEnabled,
       },
     };
   },
@@ -138,6 +138,7 @@ async function orderByNumber(trx: Trx, number: number): Promise<string | undefin
   return (await trx.selectFrom("orders").select("id").where("number", "=", number).executeTakeFirst())?.id;
 }
 
+// Includes the old WhatsApp and Telegram chat orders, which stores may still have open.
 const CHAT_AND_OFFLINE = new Set(["whatsapp", "telegram", "upi", "bank", "cod"]);
 
 export interface Proposal {
@@ -331,11 +332,6 @@ async function verifyOrderAction(trx: Trx, storeId: string, action: Extract<Prop
   ];
   const path = `/api/v1/stores/${storeId}/orders/${id}`;
   if (o.status !== "open") return { ok: false, reason: `Order #${o.number} is already cancelled.` };
-  if (action.kind === "mark_order_paid") {
-    if (o.paymentStatus !== "pending") return { ok: false, reason: `Order #${o.number} isn't awaiting payment (it's ${o.paymentStatus}).` };
-    if (!CHAT_AND_OFFLINE.has(o.paymentMethod)) return { ok: false, reason: `Order #${o.number} is a card order: it's marked paid only when the gateway confirms the payment.` };
-    return { ok: true, proposal: { kind: action.kind, title: `Mark order #${o.number} as paid`, summary, effect: `Records ${money(o.totalMinor)} received by ${o.paymentMethod} in your finances and unlocks any downloads.`, confirmLabel: "Mark as paid", danger: false, request: { method: "POST", path: `${path}/paid`, body: {} } } };
-  }
   if (action.kind === "mark_order_fulfilled") {
     if (o.fulfillmentStatus === "fulfilled") return { ok: false, reason: `Order #${o.number} is already fulfilled.` };
     return { ok: true, proposal: { kind: action.kind, title: `Mark order #${o.number} as fulfilled`, summary, effect: "Marks every remaining item as fulfilled, without tracking details. To add tracking, use the order page instead.", confirmLabel: "Mark as fulfilled", danger: false, request: { method: "POST", path: `${path}/fulfilled`, body: {} } } };

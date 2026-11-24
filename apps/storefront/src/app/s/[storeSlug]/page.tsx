@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { ThemeSection } from "@workeasy/commerce";
-import { ArrowRightIcon, ProductIcon } from "@workeasy/ui/react";
+import { formatMoney, type ThemeSection } from "@workeasy/commerce";
+import { ArrowRightIcon, CartIcon, CheckIcon, PaymentIcon, ProductIcon, StoreIcon, TruckIcon } from "@workeasy/ui/react";
 import { gridLabels, ProductGrid } from "../../../components/shop";
 import { currentShop, shopI18n } from "../../../lib/shop-context";
 import { getCollection, getProducts, mediaUrl, type ProductCard } from "../../../lib/stores";
@@ -14,12 +14,16 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: shop.store.name, description: `Shop ${shop.store.name} online.`, openGraph: { title: shop.store.name, type: "website" } };
 }
 
-/** A shop's home page: the sections from its theme, in order. */
+/**
+ * A shop's home page: the sections from its theme, in order, styled as in
+ * the Commerce designs. After the first hero comes a strip of what the shop
+ * really offers (delivery, pickup, ways to pay), taken from its settings.
+ */
 export default async function StoreHome({ params }: { params: Params }) {
   const { storeSlug } = await params;
   const shop = await currentShop(storeSlug);
   if (!shop) notFound();
-  const { store, collections, theme } = shop;
+  const { store, collections, theme, checkout } = shop;
   const { t, locale } = await shopI18n(shop);
   const labels = gridLabels(t);
   const newest = await getProducts(store.slug, { sort: "newest" });
@@ -35,38 +39,85 @@ export default async function StoreHome({ params }: { params: Params }) {
     }
   }
 
+  // A photo for each category tile: its own image, or its first product's.
+  const tileImages = new Map<string, string | null>();
+  if (theme.sections.some((x) => x.type === "collection_list")) {
+    for (const c of collections.slice(0, 6)) {
+      tileImages.set(c.handle, c.imageId ?? (await getCollection(store.slug, c.handle))?.products.find((x) => x.imageId)?.imageId ?? null);
+    }
+  }
+
+  // What the shop really offers, in the shopper's words.
+  const methods = checkout.paymentMethods;
+  const trust = [
+    checkout.delivery.enabled && { icon: <TruckIcon size={26} />, title: t("trust.delivery"), text: checkout.delivery.freeOverMinor ? t("trust.deliveryFree", { amount: formatMoney(checkout.delivery.freeOverMinor, store.currency, locale, { compact: true }) }) : t("trust.deliveryText") },
+    checkout.pickup && { icon: <StoreIcon size={26} />, title: t("trust.pickup"), text: t("trust.pickupText") },
+    methods.includes("card") && { icon: <PaymentIcon size={26} />, title: t("trust.online"), text: t("trust.onlineText") },
+    methods.includes("cod") && { icon: <CheckIcon size={26} />, title: t("trust.cod"), text: t("trust.codText") },
+    methods.includes("upi") && { icon: <PaymentIcon size={26} />, title: t("trust.upi"), text: t("trust.upiText") },
+    methods.includes("bank") && { icon: <CartIcon size={26} />, title: t("trust.bank"), text: t("trust.bankText") },
+  ].filter((x): x is { icon: React.ReactElement; title: string; text: string } => Boolean(x)).slice(0, 4);
+  const firstHero = theme.sections.find((x) => x.type === "hero")?.id;
+
   const render = (section: ThemeSection) => {
     const id = `s-${section.id}`;
     switch (section.type) {
       case "hero":
         return (
-          <section key={section.id} className={`sf-hero${section.imageId ? " sf-hero-image" : ""}`} aria-labelledby={id} style={section.imageId ? { backgroundImage: `linear-gradient(90deg, color-mix(in srgb, var(--we-primary) 88%, transparent) 30%, transparent), url(${mediaUrl(section.imageId)})` } : undefined}>
-            <span className="sf-pill">{open ? t("home.open") : t("home.soon")}</span>
-            <h1 id={id}>{section.heading || store.name}</h1>
-            <p>{open ? section.text : t("home.stocking")}</p>
-            {open && section.buttonLabel && (
-              <a className="sf-btn sf-btn-light" href={href(section.buttonHref)}>
-                {section.buttonLabel} <ArrowRightIcon size={16} />
-              </a>
+          <div key={section.id}>
+            <section className={`sf-hero${section.imageId ? " sf-hero-image" : ""}`} aria-labelledby={id}>
+              <div className="sf-hero-text">
+                <span className="sf-pill">{open ? t("home.open") : t("home.soon")}</span>
+                <h1 id={id}>{section.heading || store.name}</h1>
+                <p>{open ? section.text : t("home.stocking")}</p>
+                {open && section.buttonLabel && (
+                  <a className="sf-btn" href={href(section.buttonHref)}>
+                    <CartIcon size={18} /> {section.buttonLabel} <ArrowRightIcon size={16} />
+                  </a>
+                )}
+              </div>
+              {section.imageId && <img className="sf-hero-art" src={mediaUrl(section.imageId)} alt="" />}
+            </section>
+            {section.id === firstHero && trust.length > 0 && (
+              <ul className="sf-trust" aria-label={t("trust.label")}>
+                {trust.map((x) => (
+                  <li key={x.title}>
+                    <span aria-hidden="true">{x.icon}</span>
+                    <div>
+                      <strong>{x.title}</strong>
+                      <small>{x.text}</small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-          </section>
+          </div>
         );
       case "collection_list":
         return collections.length === 0 ? null : (
           <section key={section.id} className="sf-section" aria-labelledby={id}>
             <div className="sf-section-head">
-              <h2 id={id}>{section.heading}</h2>
+              <h2 id={id}>{section.heading || t("home.categories")}</h2>
+              <a href={`${base}/products`}>
+                {t("home.viewAll")} <ArrowRightIcon size={14} />
+              </a>
             </div>
-            <div className="sf-tiles">
-              {collections.slice(0, 6).map((c) => (
-                <a key={c.handle} className={c.imageId ? "sf-tile" : "sf-tile sf-tile-plain"} href={`${base}/c/${c.handle}`}>
-                  {c.imageId && <img src={mediaUrl(c.imageId)} alt="" loading="lazy" />}
-                  <span>{c.title}</span>
-                  <small aria-hidden="true">
-                    {t("home.viewAll")} <ArrowRightIcon size={14} />
-                  </small>
-                </a>
-              ))}
+            <div className="sf-cats">
+              {collections.slice(0, 6).map((c) => {
+                const img = tileImages.get(c.handle) ?? null;
+                return (
+                  <a key={c.handle} className="sf-cat" href={`${base}/c/${c.handle}`}>
+                    <span className="sf-cat-img">{img ? <img src={mediaUrl(img)} alt="" loading="lazy" /> : <ProductIcon size={30} />}</span>
+                    <span>{c.title}</span>
+                  </a>
+                );
+              })}
+              <a className="sf-cat" href={`${base}/products`}>
+                <span className="sf-cat-img sf-cat-more">
+                  <ArrowRightIcon size={26} />
+                </span>
+                <span>{t("home.viewAll")}</span>
+              </a>
             </div>
           </section>
         );
@@ -77,7 +128,11 @@ export default async function StoreHome({ params }: { params: Params }) {
           <section key={section.id} className="sf-section" aria-labelledby={id}>
             <div className="sf-section-head">
               <h2 id={id}>{section.heading}</h2>
-              {products.length > section.limit && <a href={more}>{t("home.viewAll")}</a>}
+              {products.length > 0 && (
+                <a href={more}>
+                  {t("home.viewAll")} <ArrowRightIcon size={14} />
+                </a>
+              )}
             </div>
             {products.length > 0 ? (
               <ProductGrid products={products.slice(0, section.limit)} slug={store.slug} currency={store.currency} locale={locale} labels={labels} />

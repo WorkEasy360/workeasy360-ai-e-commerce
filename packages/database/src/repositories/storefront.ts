@@ -23,6 +23,11 @@ export interface ProductCard {
   compareAtMinor: number | null;
   /** Whether any variant can be bought now. */
   available: boolean;
+  /**
+   * The one variant to add straight from a product card: set when the product
+   * has a single variant that can be bought now and isn't a booking.
+   */
+  quickAddVariantId: string | null;
 }
 
 /** A variant can be bought when it isn't tracked, may be backordered, or has stock left. */
@@ -42,6 +47,7 @@ export async function productCards(trx: Trx, ids: readonly string[]): Promise<Pr
       sql<string>`(SELECT max(v.price_minor) FROM app.variants v WHERE v.product_id = p.id)`.as("price_max"),
       sql<string | null>`(SELECT v.compare_at_minor FROM app.variants v WHERE v.product_id = p.id ORDER BY v.price_minor, v.position LIMIT 1)`.as("compare_at"),
       sql<boolean>`EXISTS (SELECT 1 FROM app.variants v WHERE v.product_id = p.id AND ${purchasable})`.as("available"),
+      sql<string | null>`(SELECT CASE WHEN count(*) = 1 AND bool_and(${purchasable}) THEN min(v.id::text) END FROM app.variants v WHERE v.product_id = p.id)`.as("single_variant"),
     ])
     .where("p.id", "in", ids)
     .execute();
@@ -63,6 +69,7 @@ export async function productCards(trx: Trx, ids: readonly string[]): Promise<Pr
           priceMax: Number(r.price_max ?? 0),
           compareAtMinor: compare !== null && compare > priceMin ? compare : null,
           available: r.available,
+          quickAddVariantId: r.type !== "service" ? r.single_variant : null,
         } satisfies ProductCard,
       ];
     }),

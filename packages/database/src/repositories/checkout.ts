@@ -1,7 +1,7 @@
 import type { Selectable, Transaction } from "kysely";
 import type { CheckoutSettingsTable, Database } from "../schema.js";
 
-/** A store's checkout options: delivery charges, offline payments and chat ordering. */
+/** A store's checkout options: delivery charges, offline payments and the WhatsApp number for order enquiries. */
 type Trx = Transaction<Database>;
 
 export interface CheckoutSettings {
@@ -17,8 +17,8 @@ export interface CheckoutSettings {
   upiEnabled: boolean;
   upiId: string | null;
   upiInstructions: string | null;
+  /** Shoppers can message this number about an order. It is not a way to pay. */
   whatsappNumber: string | null;
-  telegramUsername: string | null;
   orderNoteEnabled: boolean;
 }
 
@@ -37,7 +37,6 @@ export const DEFAULT_CHECKOUT_SETTINGS: CheckoutSettings = {
   upiId: null,
   upiInstructions: null,
   whatsappNumber: null,
-  telegramUsername: null,
   orderNoteEnabled: true,
 };
 
@@ -56,7 +55,6 @@ function toSettings(r: Selectable<CheckoutSettingsTable>): CheckoutSettings {
     upiId: r.upi_id,
     upiInstructions: r.upi_instructions,
     whatsappNumber: r.whatsapp_number,
-    telegramUsername: r.telegram_username,
     orderNoteEnabled: r.order_note_enabled,
   };
 }
@@ -82,7 +80,6 @@ export async function saveCheckoutSettings(trx: Trx, storeId: string, s: Checkou
     upi_id: s.upiId,
     upi_instructions: s.upiInstructions,
     whatsapp_number: s.whatsappNumber,
-    telegram_username: s.telegramUsername,
     order_note_enabled: s.orderNoteEnabled,
   };
   const row = await trx
@@ -94,11 +91,14 @@ export async function saveCheckoutSettings(trx: Trx, storeId: string, s: Checkou
   return toSettings(row);
 }
 
-/** Payment methods shoppers can choose, in the order the storefront offers them. */
-export function enabledPaymentMethods(s: CheckoutSettings): Array<"cod" | "bank" | "upi" | "whatsapp" | "telegram"> {
-  const methods: Array<"cod" | "bank" | "upi" | "whatsapp" | "telegram"> = [];
-  if (s.whatsappNumber) methods.push("whatsapp");
-  if (s.telegramUsername) methods.push("telegram");
+/**
+ * Payment methods shoppers can choose, in the order the storefront offers them.
+ * WhatsApp and Telegram used to be listed here as "chat orders". They are no
+ * longer ways to pay: a message doesn't confirm or pay for an order. Old orders
+ * keep their method so their history reads correctly.
+ */
+export function enabledPaymentMethods(s: CheckoutSettings): Array<"cod" | "bank" | "upi"> {
+  const methods: Array<"cod" | "bank" | "upi"> = [];
   if (s.upiEnabled && s.upiId) methods.push("upi");
   if (s.bankEnabled && s.bankInstructions) methods.push("bank");
   if (s.codEnabled) methods.push("cod");

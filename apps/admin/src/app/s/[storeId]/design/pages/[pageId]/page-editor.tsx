@@ -79,7 +79,7 @@ export function PageEditor({ pageId }: { pageId: string }) {
       </a>
       <PageHeader
         title={form?.title || "Untitled page"}
-        eyebrow="Store Design"
+        eyebrow="Storefront"
         subtitle={page ? (page.published ? "Published: shoppers can open it." : "Draft: only you can see it.") : undefined}
         actions={
           page && form ? (

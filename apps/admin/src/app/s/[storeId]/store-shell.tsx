@@ -2,10 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { BrandMark, CloseIcon, ExternalIcon, LogoutIcon, MenuIcon, PlusIcon, SettingsIcon, StoreIcon } from "@workeasy/ui/react";
+import { BrandMark, ChevronDownIcon, CloseIcon, ExternalIcon, EyeIcon, LogoutIcon, MenuIcon, MoreIcon, PlusIcon, PRODUCT_NAME, StoreIcon } from "@workeasy/ui/react";
 import { ThemeToggle } from "@workeasy/ui/theme-toggle";
-import { api, ApiError, setStorefrontOrigin, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
-import { MODULE_GROUPS, MODULES } from "../../../lib/modules";
+import { api, ApiError, setServerInfo, storefrontUrl, type Me, type Store, type StoreResponse, type StoreRole } from "../../../lib/api";
+import { moduleByKey, MODULES, sectionOf, SECTIONS, type AdminSection, type ModuleKey } from "../../../lib/modules";
 import { NoAccess } from "../../workeasy360";
 import { AssistantPanel } from "./assistant-panel";
 import { GlobalSearch, Notifications } from "./shell-tools";
@@ -45,22 +45,35 @@ function initials(name: string): string {
 }
 
 /**
- * The admin frame for one store, the WorkEasy360 application shell: a navy
- * sidebar of the modules the user may open, grouped as in
- * docs/01-design-system.md, and a top bar with the store switcher, search,
- * a link to the live storefront, notifications, settings, the theme toggle
- * and the account menu.
+ * The admin frame for one store, as in the Commerce designs: a deep teal
+ * sidebar with the WorkEasy360 wordmark, the Commerce badge, the eight
+ * sections and a "Your store is live" card; a top bar with the store
+ * switcher, search, notifications and the signed-in person;
+ * pill tabs for sections with several pages; and on phones a bottom tab bar.
  */
 export function StoreShell({ storeId, children }: { storeId: string; children: ReactNode }) {
   const pathname = usePathname();
   const [state, setState] = useState<State>({ kind: "loading" });
+  // Orders waiting to be packed and sent, for the count beside Orders.
+  const [toFulfil, setToFulfil] = useState(0);
+  const canOrders = state.kind === "ready" && state.detail.permissions.includes("orders.read");
+  useEffect(() => {
+    if (!canOrders) return;
+    let cancelled = false;
+    api<{ counts: { unfulfilled: number } }>(`/api/v1/stores/${storeId}/orders?limit=1`)
+      .then((r) => !cancelled && setToFulfil(r.counts.unfulfilled))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId, canOrders]);
   // The drawer belongs to the page it was opened on, so navigating closes it.
   const [navOpenOn, setNavOpenOn] = useState<string | null>(null);
   const navOpen = navOpenOn === pathname;
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api<Me>("/api/v1/me").then((me) => (setStorefrontOrigin(me.storefrontOrigin), me)), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
+    Promise.all([api<Me>("/api/v1/me").then((me) => (setServerInfo(me), me)), api<StoreResponse>(`/api/v1/stores/${storeId}`)])
       .then(([me, detail]) => {
         if (!cancelled) setState({ kind: "ready", me, detail });
       })
@@ -132,9 +145,21 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
     can,
     setStore: (store) => setState({ ...ready, detail: { ...ready.detail, store } }),
   };
-  const visible = MODULES.filter((m) => !m.permission || can(m.permission));
+  const allowed = (key: ModuleKey) => {
+    const m = MODULES.find((x) => x.key === key)!;
+    return !m.permission || can(m.permission);
+  };
   const isCurrent = (path: string) => (path === "" ? pathname === base : pathname === `${base}${path}` || pathname.startsWith(`${base}${path}/`));
+  // The most specific module this page belongs to (Customers over Orders on /orders/customers).
+  const here = MODULES.filter((m) => isCurrent(m.path)).toSorted((a, b) => b.path.length - a.path.length)[0];
+  const currentSection = here ? sectionOf(here.key) : undefined;
+  // Sections the member can open, each linking to its first page they may see.
+  const sections = SECTIONS.map((s) => ({ ...s, first: s.modules.find(allowed) })).filter((s): s is AdminSection & { first: ModuleKey } => s.first !== undefined);
+  const hrefOf = (key: ModuleKey) => `${base}${moduleByKey(key).path}`;
+  // Pill tabs above the page for sections with more than one page (Media Library and AI Studio open from the editors instead).
+  const subpages = currentSection ? currentSection.modules.filter((k) => allowed(k) && !moduleByKey(k).under) : [];
   const otherStores = ready?.me.stores.filter((s) => s.id !== storeId) ?? [];
+  const live = ready ? storefrontUrl(ready.detail.store.slug) : undefined;
 
   return (
     <div className="c-app" data-nav-open={navOpen ? "true" : undefined}>
@@ -142,34 +167,46 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
         Skip to main content
       </a>
       <nav className="c-sidebar" aria-label="Store">
-        <a className="c-sidebar-brand" href={base}>
-          <BrandMark size={30} />
+        <a className="c-sidebar-brand" href={base} aria-label={`${PRODUCT_NAME} home`}>
+          <BrandMark size={34} />
           <span>
-            Workeasy
-            <small>AI Commerce</small>
+            WorkEasy<b>360</b>
           </span>
         </a>
-        {ready &&
-          MODULE_GROUPS.map((group) => {
-            const items = visible.filter((m) => m.group === group);
-            if (items.length === 0) return null;
-            return (
-              <div className="c-nav-group" key={group} style={group === "Store" ? { marginTop: "auto", paddingTop: 16 } : undefined}>
-                {group !== "Overview" && group !== "Store" && <p className="c-nav-label">{group}</p>}
-                <ul className="c-nav">
-                  {items.map((m) => (
-                    <li key={m.key}>
-                      <a href={`${base}${m.path}`} aria-current={isCurrent(m.path) ? "page" : undefined}>
-                        {m.icon(18)}
-                        {m.label}
-                        {m.key === "ai" && <span className="c-nav-tag">AI</span>}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+        <a className="c-brand-badge" href={base} tabIndex={-1} aria-hidden="true">
+          <StoreIcon size={22} /> Commerce
+        </a>
+        {ready && (
+          <ul className="c-nav" style={{ marginTop: 14 }}>
+            {sections.map((s) => (
+              <li key={s.key}>
+                <a href={hrefOf(s.first)} aria-current={s.key === currentSection?.key ? "page" : undefined}>
+                  {s.icon(22)}
+                  {s.label}
+                  {s.key === "orders" && toFulfil > 0 && (
+                    <span className="c-nav-count" aria-label={`${toFulfil} to fulfil`}>
+                      {toFulfil > 99 ? "99+" : toFulfil}
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        {ready && live && (
+          <div className="c-live-card" style={{ marginTop: "auto" }}>
+            <span className="c-live-art" aria-hidden="true">
+              <StoreIcon size={30} />
+            </span>
+            <strong>Your store is live!</strong>
+            <a className="c-live-url" href={live} target="_blank" rel="noreferrer">
+              {live.replace(/^https?:\/\//, "")} <ExternalIcon size={13} />
+            </a>
+            <a className="c-btn" href={live} target="_blank" rel="noreferrer">
+              <EyeIcon size={18} /> View Store
+            </a>
+          </div>
+        )}
       </nav>
 
       <header className="c-topbar">
@@ -177,14 +214,22 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
           <button type="button" className="c-btn c-btn-ghost c-btn-icon c-menu-toggle" aria-label={navOpen ? "Close menu" : "Open menu"} aria-expanded={navOpen} onClick={() => setNavOpenOn(navOpen ? null : pathname)}>
             {navOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
+          <a className="c-topbar-brand" href={base} aria-label={`${PRODUCT_NAME} home`}>
+            <BrandMark size={28} />
+            <span>
+              WorkEasy<b>360</b>
+              <small>Commerce</small>
+            </span>
+          </a>
           {ready ? (
-            <details className="c-menu">
-              <summary className="c-btn c-btn-ghost" style={{ maxWidth: "52vw" }}>
+            <details className="c-menu c-store-menu">
+              <summary className="c-btn c-btn-ghost c-store-switch" style={{ maxWidth: "52vw" }}>
                 <span className="c-store-chip">
                   <span className="c-store-initial" aria-hidden="true">
-                    {ready.detail.store.name.slice(0, 1).toUpperCase()}
+                    <StoreIcon size={16} />
                   </span>
                   <span>{ready.detail.store.name}</span>
+                  <ChevronDownIcon size={16} />
                 </span>
               </summary>
               <div className="c-menu-list" style={{ left: 0, right: "auto" }}>
@@ -206,26 +251,20 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
           )}
           {context && <GlobalSearch base={base} can={can} stores={otherStores} />}
         </div>
-        <div className="c-topbar-end">
-          {ready && (
-            <a className="c-btn c-btn-sm c-hide-sm" href={storefrontUrl(ready.detail.store.slug)} target="_blank" rel="noreferrer">
-              <ExternalIcon size={15} /> View store
-            </a>
-          )}
-          {ready && <span className="c-topbar-divider c-hide-sm" aria-hidden="true" />}
+        <div className="c-topbar-end" style={{ gap: 8 }}>
           {context && <Notifications storeId={storeId} base={base} can={can} />}
-          {context && can("settings.manage") && (
-            <a className="c-btn c-btn-ghost c-btn-icon c-hide-sm" href={`${base}/settings`} aria-label="Settings" title="Settings">
-              <SettingsIcon />
-            </a>
-          )}
-          <ThemeToggle />
+          <ThemeToggle className="c-btn c-btn-ghost c-btn-icon c-theme-toggle" />
           {context && (
             <details className="c-menu">
-              <summary className="c-btn c-btn-ghost c-btn-icon" aria-label={`Account: ${context.userName}`}>
+              <summary className="c-btn c-btn-ghost c-user-chip" aria-label={`Account: ${context.userName}`}>
                 <span className="c-avatar" aria-hidden="true">
                   {initials(context.userName)}
                 </span>
+                <span aria-hidden="true">
+                  <strong>{context.userName}</strong>
+                  <small>Store {context.role}</small>
+                </span>
+                <ChevronDownIcon size={16} />
               </summary>
               <div className="c-menu-list">
                 <span className="c-menu-note">
@@ -258,7 +297,18 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
 
       <main className="c-main" id="main" tabIndex={-1}>
         {context ? (
-          <StoreContext.Provider value={context}>{children}</StoreContext.Provider>
+          <StoreContext.Provider value={context}>
+            {subpages.length > 1 && (
+              <nav className="c-subnav" aria-label={currentSection?.label}>
+                {subpages.map((k) => (
+                  <a key={k} href={hrefOf(k)} aria-current={here?.key === k || here?.under === k ? "page" : undefined}>
+                    {moduleByKey(k).label}
+                  </a>
+                ))}
+              </nav>
+            )}
+            {children}
+          </StoreContext.Provider>
         ) : (
           <div className="c-page" role="status">
             <span className="c-visually-hidden">Loading your store…</span>
@@ -275,6 +325,22 @@ export function StoreShell({ storeId, children }: { storeId: string; children: R
         )}
       </main>
       {context && <AssistantPanel storeId={storeId} can={can} userName={context.userName} />}
+      {ready && (
+        <nav className="c-tabbar" aria-label="Main sections">
+          {sections
+            .filter((s) => ["home", "orders", "catalog", "storefront"].includes(s.key))
+            .map((s) => (
+              <a key={s.key} href={hrefOf(s.first)} aria-current={s.key === currentSection?.key ? "page" : undefined}>
+                {s.icon(22)}
+                {s.short ?? s.label}
+              </a>
+            ))}
+          <button type="button" aria-expanded={navOpen} onClick={() => setNavOpenOn(navOpen ? null : pathname)}>
+            <MoreIcon size={22} />
+            More
+          </button>
+        </nav>
+      )}
     </div>
   );
 }

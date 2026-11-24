@@ -575,7 +575,8 @@ export async function listOrders(trx: Trx, query: { tab: OrderTab; q?: string | 
   };
 }
 
-export async function orderCounts(trx: Trx): Promise<Record<OrderTab, number>> {
+/** Counts for the order tabs, plus fulfilled and partly fulfilled open orders for the dashboard's snapshot. */
+export async function orderCounts(trx: Trx): Promise<Record<OrderTab | "fulfilled" | "partial", number>> {
   const row = await trx
     .selectFrom("orders")
     .select([
@@ -583,6 +584,8 @@ export async function orderCounts(trx: Trx): Promise<Record<OrderTab, number>> {
       sql<number>`count(*) FILTER (WHERE status = 'open' AND payment_status = 'pending')::int`.as("unpaid"),
       sql<number>`count(*) FILTER (WHERE status = 'open' AND fulfillment_status = 'unfulfilled')::int`.as("unfulfilled"),
       sql<number>`count(*) FILTER (WHERE status = 'cancelled')::int`.as("cancelled"),
+      sql<number>`count(*) FILTER (WHERE status = 'open' AND fulfillment_status = 'fulfilled')::int`.as("fulfilled"),
+      sql<number>`count(*) FILTER (WHERE status = 'open' AND fulfillment_status = 'partially_fulfilled')::int`.as("partial"),
     ])
     .executeTakeFirstOrThrow();
   return row;

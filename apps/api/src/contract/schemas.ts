@@ -82,6 +82,18 @@ export type StoreBody = z.infer<typeof StoreBodySchema>;
 const Role = z.enum(STORE_ROLES);
 const Permissions = z.array(z.enum(STORE_PERMISSIONS));
 
+/**
+ * Features that stay hidden until their whole journey is tested (development
+ * note v2, 1.2, 4.2, 8.2 and 9.1). Each one is off unless COMMERCE_FEATURES
+ * lists it. Turning one off stops new setups only; what a store already has
+ * keeps working.
+ * - services: bookable service products (bookings belong to Appointment Booking).
+ * - buy_x_get_y: buy-X-get-Y offers.
+ * - stripe: connecting Stripe as a card gateway.
+ */
+export const LAUNCH_FEATURES = ["services", "buy_x_get_y", "stripe"] as const;
+export type LaunchFeature = (typeof LAUNCH_FEATURES)[number];
+
 export const MeResponseSchema = z.object({
   user: z.object({ id: Uuid, displayName: z.string().nullable() }),
   stores: z.array(z.object({ id: Uuid, name: z.string(), slug: z.string(), role: Role, permissions: Permissions })),
@@ -89,6 +101,8 @@ export const MeResponseSchema = z.object({
   storefrontOrigin: z.url(),
   /** How this session was opened. A WorkEasy360 session sees only its organization's stores and may also sign out of WorkEasy360. */
   session: z.object({ provider: z.enum(["local", "workeasy360"]), workeasy360SignOut: z.boolean() }),
+  /** The launch-gated features this server has turned on. */
+  features: z.array(z.enum(LAUNCH_FEATURES)),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 

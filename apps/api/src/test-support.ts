@@ -23,6 +23,8 @@ export const testSettings: AppSettings = {
   aiProvider: "stub",
   aiDailyLimit: 5,
   assistantDailyLimit: 20,
+  // Every launch-gated feature on, so their own tests run; gating has its own test.
+  features: ["services", "buy_x_get_y", "stripe"],
 };
 
 /**

@@ -49,7 +49,7 @@ beforeAll(async () => {
   await as(owner, "put", `${admin()}/checkout-settings`).send({
     deliveryEnabled: true, deliveryFeeMinor: 0, freeDeliveryOverMinor: null, pickupEnabled: false, pickupAddress: null,
     codEnabled: false, codInstructions: null, bankEnabled: false, bankInstructions: null, upiEnabled: true, upiId: "chai@okaxis", upiInstructions: null,
-    whatsappNumber: null, telegramUsername: null, orderNoteEnabled: false,
+    whatsappNumber: null, orderNoteEnabled: false,
   });
   const product = await as(owner, "post", `${admin()}/products`).send({ type: "physical", status: "active", title: "Masala Chai", variants: [{ options: [], priceMinor: 25000, stock: 10 }] });
   const placed = await request(app)
@@ -81,27 +81,35 @@ describe("assistant", () => {
     expect(denied.body.answer.link).toBeNull();
   });
 
-  it("proposes a checked change that only the existing endpoint carries out", async () => {
+  it("never records a payment: it sends the member to the order to verify it", async () => {
     const r = await ask(owner, `Order #${orderNumber} paid by UPI, I've received it`);
     expect(r.status).toBe(200);
-    const p = r.body.answer.proposal;
-    expect(p).toMatchObject({ kind: "mark_order_paid", danger: false, request: { method: "POST", path: `${admin()}/orders/${orderId}/paid`, body: {} } });
-    expect(p.summary).toContainEqual(["Customer", "Meera Iyer"]);
-    // Nothing has changed yet.
+    expect(r.body.answer.proposal).toBeNull();
+    expect(r.body.answer.link).toMatchObject({ href: `/s/${storeId}/orders/${orderId}` });
     expect((await as(owner, "get", `${admin()}/orders/${orderId}`)).body.order.paymentStatus).toBe("pending");
-    const done = await as(owner, "post", p.request.path).send(p.request.body);
-    expect(done.status).toBe(200);
-    expect(done.body.order.paymentStatus).toBe("paid");
-    // Asking again: the server re-checks the order and refuses.
-    const again = await ask(owner, `Order #${orderNumber} paid by UPI, I've received it`);
-    expect(again.body.answer.proposal).toBeNull();
-    expect(again.body.answer.note).toMatch(/isn't awaiting payment/);
   });
 
   it("never offers a change to a role that can't make it", async () => {
-    const r = await ask(analyst, `Order #${orderNumber} paid, received it`);
+    const r = await ask(analyst, `Order #${orderNumber} has been dispatched`);
     expect(r.body.answer.proposal).toBeNull();
     expect(r.body.answer.note).toMatch(/role can't make this change/);
+  });
+
+  it("proposes a checked change that only the existing endpoint carries out", async () => {
+    const r = await ask(owner, `Order #${orderNumber} has been dispatched`);
+    expect(r.status).toBe(200);
+    const p = r.body.answer.proposal;
+    expect(p).toMatchObject({ kind: "mark_order_fulfilled", danger: false, request: { method: "POST", path: `${admin()}/orders/${orderId}/fulfilled`, body: {} } });
+    expect(p.summary).toContainEqual(["Customer", "Meera Iyer"]);
+    // Nothing has changed yet.
+    expect((await as(owner, "get", `${admin()}/orders/${orderId}`)).body.order.fulfillmentStatus).toBe("unfulfilled");
+    const done = await as(owner, "post", p.request.path).send(p.request.body);
+    expect(done.status).toBe(200);
+    expect(done.body.order.fulfillmentStatus).toBe("fulfilled");
+    // Asking again: the server re-checks the order and refuses.
+    const again = await ask(owner, `Order #${orderNumber} has been dispatched`);
+    expect(again.body.answer.proposal).toBeNull();
+    expect(again.body.answer.note).toMatch(/already fulfilled/);
   });
 
   it("adds a product only once the member confirms, through the products endpoint", async () => {

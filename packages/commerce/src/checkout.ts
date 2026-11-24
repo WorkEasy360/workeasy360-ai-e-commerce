@@ -71,14 +71,14 @@ export interface ChatOrder {
 }
 
 /**
- * The message a shopper sends to place a chat order: order number, items,
- * totals, delivery details and a link to the order. Plain text, so it reads
- * well in WhatsApp and Telegram alike.
+ * The WhatsApp message a shopper can send about an order they've placed:
+ * order number, items, totals, delivery details and a link to the order. An
+ * enquiry only: the order is already placed and the message doesn't pay for it.
  */
 export function chatOrderMessage(o: ChatOrder, locale = "en-IN"): string {
   const money = (m: number) => formatMoney(m, o.currency, locale, { compact: true });
   const lines = [
-    `Hi ${o.storeName}! I'd like to place order #${o.number}:`,
+    `Hi ${o.storeName}! A question about my order #${o.number}:`,
     "",
     ...o.lines.map((l) => `• ${l.quantity} × ${l.title}${l.variantTitle ? ` (${l.variantTitle})` : ""}: ${money(l.totalMinor)}${l.bookingAt ? `, for ${l.bookingAt}` : ""}`),
     "",
@@ -103,9 +103,4 @@ export function chatOrderMessage(o: ChatOrder, locale = "en-IN"): string {
 /** A WhatsApp link that opens a chat with the store, message filled in. */
 export function whatsappLink(number: string, message: string): string {
   return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
-}
-
-/** A Telegram link to the store's account. Telegram can't pre-fill a chat, so the storefront copies the message for pasting. */
-export function telegramLink(username: string): string {
-  return `https://t.me/${encodeURIComponent(username.replace(/^@/, ""))}`;
 }
